@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neural Constellation | Earl's Workshop</title>
+    <style>
+        :root {
+            --bg: #050508;
+            --accent1: #ff6b35;
+            --accent2: #4ecdc4;
+            --accent3: #a855f7;
+            --accent4: #fbbf24;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: var(--bg);
+            color: #fff;
+            font-family: 'SF Mono', Monaco, monospace;
+            overflow: hidden;
+            height: 100vh;
+        }
+        
+        #canvas {
+            display: block;
+            cursor: crosshair;
+        }
+        
+        .ui {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 1.5rem 2rem;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        .ui h1 {
+            font-size: 1.2rem;
+            font-weight: 400;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+        
+        .ui p {
+            font-size: 0.8rem;
+            opacity: 0.6;
+            max-width: 500px;
+            line-height: 1.5;
+        }
+        
+        .controls {
+            position: fixed;
+            bottom: 2rem;
+            left: 2rem;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            z-index: 10;
+        }
+        
+        .control-group {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 1rem;
+            min-width: 150px;
+        }
+        
+        .control-group label {
+            display: block;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            opacity: 0.6;
+            margin-bottom: 0.5rem;
+        }
+        
+        .control-group input[type="range"] {
+            width: 100%;
+            height: 4px;
+            -webkit-appearance: none;
+            background: rgba(255,255,255,0.2);
+            border-radius: 2px;
+            outline: none;
+        }
+        
+        .control-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            background: var(--accent2);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        
+        .stats {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            text-align: right;
+            font-size: 0.75rem;
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        
+        .stats span {
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+        
+        .back {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            color: rgba(255,255,255,0.6);
+            text-decoration: none;
+            font-size: 0.8rem;
+            padding: 0.5rem 1rem;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        
+        .back:hover {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+        
+        .mode-indicator {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            text-shadow: 0 0 30px currentColor;
+        }
+        
+        .mode-indicator.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="ui">
+        <h1>🧠 Neural Constellation</h1>
+        <p>An emergent particle simulation with flocking behavior, neural connections, and gravitational dynamics. 
+        Move your mouse to attract particles. Click to create shockwaves. Press space to change modes.</p>
+    </div>
+    
+    <div class="stats" id="stats">
+        <span id="fps">FPS: 60</span>
+        <span id="particles">Particles: 0</span>
+        <span id="connections">Connections: 0</span>
+        <span id="mode">Mode: Emergent</span>
+    </div>
+    
+    <div class="controls">
+        <div class="control-group">
+            <label>Particle Count</label>
+            <input type="range" id="particleCount" min="50" max="300" value="150">
+        </div>
+        <div class="control-group">
+            <label>Connection Radius</label>
+            <input type="range" id="connectionRadius" min="50" max="200" value="120">
+        </div>
+        <div class="control-group">
+            <label>Attraction Force</label>
+            <input type="range" id="attraction" min="0" max="100" value="30">
+        </div>
+    </div>
+    
+    <div class="mode-indicator" id="modeIndicator">🌌</div>
+    
+    <canvas id="canvas"></canvas>
+    
+    <a href="/" class="back">← Back to Workshop</a>
+    
+    <script src="simulation.js"></script>
+</body>
+</html>

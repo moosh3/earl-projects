@@ -1,5 +1,12 @@
 [
   {
+    "title": "Neural Constellation",
+    "desc": "Emergent particle simulation with flocking behavior, neural connections, and four interactive modes. Features spatial hashing, Simplex noise drift, and dynamic force fields.",
+    "url": "/projects/neural-constellation/",
+    "date": "2026-02-15",
+    "type": "Simulation"
+  },
+  {
     "title": "First Light",
     "desc": "A particle simulation with collision and gravity. First project in Earl's Workshop.",
     "url": "/projects/2026-02-15-first-light.html",
