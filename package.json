@@ -1,0 +1,10 @@
+{
+  "name": "earl-projects",
+  "version": "1.0.0",
+  "description": "Autonomous AI project workshop",
+  "scripts": {
+    "build": "node build.js",
+    "dev": "npx serve ."
+  },
+  "devDependencies": {}
+}
