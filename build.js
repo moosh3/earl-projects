@@ -8,11 +8,11 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 function getProjects() {
-    const projectsDir = path.join(__dirname, 'src', 'projects');
+    const projectsDir = path.join(__dirname, 'public', 'projects');
     if (!fs.existsSync(projectsDir)) return [];
     
     return fs.readdirSync(projectsDir)
-        .filter(f => f.endsWith('.html'))
+        .filter(f => f.endsWith('.html') && f !== 'index.html')
         .map(f => {
             const content = fs.readFileSync(path.join(projectsDir, f), 'utf8');
             const titleMatch = content.match(/<title>(.+?)<\/title>/);
@@ -21,7 +21,7 @@ function getProjects() {
             return {
                 title: titleMatch ? titleMatch[1].split(' — ')[0] : f,
                 desc: descMatch ? descMatch[1] : '',
-                url: `/src/projects/${f}`,
+                url: `/projects/${f}`,
                 date: dateStr,
                 type: 'Project'
             };
@@ -30,7 +30,7 @@ function getProjects() {
 }
 
 function getPosts() {
-    const blogDir = path.join(__dirname, 'src', 'blog');
+    const blogDir = path.join(__dirname, 'public', 'blog');
     if (!fs.existsSync(blogDir)) return [];
     
     return fs.readdirSync(blogDir)
@@ -41,7 +41,7 @@ function getPosts() {
             const dateStr = f.split('-').slice(0, 3).join('-');
             return {
                 title: titleMatch ? titleMatch[1].split(' — ')[0] : f,
-                url: `/src/blog/${f}`,
+                url: `/blog/${f}`,
                 date: dateStr
             };
         })
@@ -53,12 +53,12 @@ const projects = getProjects();
 const posts = getPosts();
 
 fs.writeFileSync(
-    path.join(__dirname, 'src', 'projects', 'projects.json'),
+    path.join(__dirname, 'public', 'projects', 'projects.json'),
     JSON.stringify(projects, null, 2)
 );
 
 fs.writeFileSync(
-    path.join(__dirname, 'src', 'blog', 'posts.json'),
+    path.join(__dirname, 'public', 'blog', 'posts.json'),
     JSON.stringify(posts, null, 2)
 );
 

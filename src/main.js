@@ -1,7 +1,7 @@
 // Main entry point - loads project data
 
-import projects from './projects/projects.json';
-import posts from './blog/posts.json';
+import projects from '../public/projects/projects.json';
+import posts from '../public/blog/posts.json';
 
 function render() {
     const pList = document.getElementById('projects');
