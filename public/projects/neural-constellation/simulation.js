@@ -1,615 +1,539 @@
 /**
- * Neural Constellation - Emergent Particle Simulation
- * 
- * Features:
- * - Boids flocking algorithm with separation, alignment, cohesion
- * - Dynamic neural network visualization
- * - Multiple interaction modes (attract/repel/orbit/chaos)
- * - Smooth particle morphing and color transitions
- * - Optimized spatial hashing for O(n) neighbor queries
- * - Perlin-noise inspired drift for organic movement
+ * Neural Constellation - Advanced Particle Simulation
+ * Features: Emergent flocking, neural connections, mouse interaction, multiple modes
  */
 
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
+(function() {
+    'use strict';
 
-// Configuration
-let config = {
-    particleCount: 150,
-    connectionRadius: 120,
-    attractionStrength: 0.3,
-    friction: 0.98,
-    maxSpeed: 4,
-    separationRadius: 30,
-    alignmentRadius: 50,
-    cohesionRadius: 100,
-    mode: 'emergent' // emergent, neural, gravity, chaos
-};
-
-// State
-let particles = [];
-let mouse = { x: 0, y: 0, down: false };
-let shockwaves = [];
-let frameCount = 0;
-let lastTime = performance.now();
-let fps = 60;
-
-// Color palettes for different modes
-const palettes = {
-    emergent: ['#ff6b35', '#4ecdc4', '#a855f7', '#fbbf24', '#ec4899'],
-    neural: ['#00ffff', '#0088ff', '#4400ff', '#8800ff', '#ff00ff'],
-    gravity: ['#ffaa00', '#ff6600', '#ff2200', '#ff0044', '#ff0088'],
-    chaos: ['#ffffff', '#ff0000', '#00ff00', '#0000ff', '#ffff00']
-};
-
-// Resize handling
-function resize() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-}
-window.addEventListener('resize', resize);
-resize();
-
-// Simplex-like noise for organic drift
-class SimpleNoise {
-    constructor() {
-        this.perm = new Uint8Array(512);
-        for (let i = 0; i < 256; i++) this.perm[i] = i;
-        for (let i = 255; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [this.perm[i], this.perm[j]] = [this.perm[j], this.perm[i]];
-        }
-        for (let i = 0; i < 256; i++) this.perm[i + 256] = this.perm[i];
-    }
+    // Canvas setup
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
     
-    fade(t) { return t * t * t * (t * (t * 6 - 15) + 10); }
-    lerp(t, a, b) { return a + t * (b - a); }
-    grad(hash, x, y) {
-        const h = hash & 3;
-        const u = h < 2 ? x : y;
-        const v = h < 2 ? y : x;
-        return ((h & 1) ? -u : u) + ((h & 2) ? -2 * v : 2 * v);
-    }
-    
-    noise(x, y) {
-        const X = Math.floor(x) & 255;
-        const Y = Math.floor(y) & 255;
-        x -= Math.floor(x);
-        y -= Math.floor(y);
-        const u = this.fade(x);
-        const v = this.fade(y);
-        const A = this.perm[X] + Y, B = this.perm[X + 1] + Y;
-        return this.lerp(v, 
-            this.lerp(u, this.grad(this.perm[A], x, y), this.grad(this.perm[B], x - 1, y)),
-            this.lerp(u, this.grad(this.perm[A + 1], x, y - 1), this.grad(this.perm[B + 1], x - 1, y - 1))
-        );
-    }
-}
+    // UI elements
+    const fpsEl = document.getElementById('fps');
+    const particlesEl = document.getElementById('particles');
+    const connectionsEl = document.getElementById('connections');
+    const modeEl = document.getElementById('mode');
+    const modeIndicator = document.getElementById('modeIndicator');
+    const particleCountSlider = document.getElementById('particleCount');
+    const connectionRadiusSlider = document.getElementById('connectionRadius');
+    const attractionSlider = document.getElementById('attraction');
 
-const noise = new SimpleNoise();
+    // Configuration
+    const config = {
+        particleCount: 150,
+        connectionRadius: 120,
+        attractionForce: 0.3,
+        maxSpeed: 3,
+        maxForce: 0.1,
+        particleRadius: 2.5,
+        glowIntensity: 20,
+        trailFade: 0.08,
+        mode: 0 // 0: Emergent, 1: Gravity, 2: Neural
+    };
 
-// Particle class with complex behaviors
-class Particle {
-    constructor(x, y) {
-        this.x = x || Math.random() * canvas.width;
-        this.y = y || Math.random() * canvas.height;
-        this.vx = (Math.random() - 0.5) * 2;
-        this.vy = (Math.random() - 0.5) * 2;
-        this.radius = 2 + Math.random() * 3;
-        this.baseRadius = this.radius;
-        this.hue = Math.random() * 360;
-        this.energy = Math.random();
-        this.phase = Math.random() * Math.PI * 2;
-        this.id = Math.random();
-        this.pulsePhase = Math.random() * Math.PI * 2;
-        
-        // Assign color from palette
-        const palette = palettes[config.mode];
-        this.color = palette[Math.floor(Math.random() * palette.length)];
+    // Mode names and emojis
+    const modes = [
+        { name: 'Emergent', emoji: '🌌', color: '#4ecdc4' },
+        { name: 'Gravity', emoji: '🌍', color: '#ff6b35' },
+        { name: 'Neural', emoji: '🧠', color: '#a855f7' }
+    ];
+
+    // State
+    let particles = [];
+    let mouse = { x: 0, y: 0, active: false };
+    let shockwaves = [];
+    let lastTime = performance.now();
+    let frameCount = 0;
+    let fps = 60;
+    let width, height;
+    let animationId;
+
+    // Resize canvas
+    function resize() {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
     }
-    
-    update(particles, time) {
-        // Store old position for velocity calculation
-        const oldVx = this.vx;
-        const oldVy = this.vy;
-        
-        // Apply mode-specific forces
-        switch(config.mode) {
-            case 'emergent':
-                this.applyFlocking(particles);
-                this.applyNoiseDrift(time);
-                break;
-            case 'neural':
-                this.applyNeuralBehavior(particles);
-                break;
-            case 'gravity':
-                this.applyGravity(particles);
-                break;
-            case 'chaos':
-                this.applyChaos(time);
-                break;
+
+    // Utility functions
+    const random = (min, max) => Math.random() * (max - min) + min;
+    const clamp = (val, min, max) => Math.min(Math.max(val, min), max);
+    const dist = (x1, y1, x2, y2) => Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+    const angle = (x1, y1, x2, y2) => Math.atan2(y2 - y1, x2 - x1);
+
+    // Color palette for particles
+    const colors = [
+        '#ff6b35', // Orange
+        '#4ecdc4', // Teal
+        '#a855f7', // Purple
+        '#fbbf24', // Amber
+        '#f472b6', // Pink
+        '#60a5fa'  // Blue
+    ];
+
+    // Shockwave class
+    class Shockwave {
+        constructor(x, y) {
+            this.x = x;
+            this.y = y;
+            this.radius = 0;
+            this.maxRadius = 250;
+            this.strength = 15;
+            this.decay = 0.96;
+            this.life = 1;
         }
-        
-        // Mouse interaction
-        this.applyMouseForce();
-        
-        // Apply shockwaves
-        this.applyShockwaves();
-        
-        // Friction
-        this.vx *= config.friction;
-        this.vy *= config.friction;
-        
-        // Speed limit
-        const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
-        if (speed > config.maxSpeed) {
-            this.vx = (this.vx / speed) * config.maxSpeed;
-            this.vy = (this.vy / speed) * config.maxSpeed;
+
+        update() {
+            this.radius += 8;
+            this.strength *= this.decay;
+            this.life -= 0.02;
+            return this.life > 0 && this.radius < this.maxRadius;
         }
-        
-        // Update position
-        this.x += this.vx;
-        this.y += this.vy;
-        
-        // Boundary wrapping
-        if (this.x < 0) this.x = canvas.width;
-        if (this.x > canvas.width) this.x = 0;
-        if (this.y < 0) this.y = canvas.height;
-        if (this.y > canvas.height) this.y = 0;
-        
-        // Update energy based on movement
-        this.energy = Math.min(1, this.energy * 0.99 + speed * 0.05);
-        
-        // Pulsing radius
-        this.pulsePhase += 0.05 + this.energy * 0.1;
-        this.radius = this.baseRadius * (1 + Math.sin(this.pulsePhase) * 0.3 + this.energy * 0.5);
-    }
-    
-    applyFlocking(particles) {
-        let sepX = 0, sepY = 0, sepCount = 0;
-        let aliX = 0, aliY = 0, aliCount = 0;
-        let cohX = 0, cohY = 0, cohCount = 0;
-        
-        for (let other of particles) {
-            if (other === this) continue;
+
+        draw(ctx) {
+            const alpha = this.life * 0.5;
+            ctx.save();
+            ctx.globalCompositeOperation = 'screen';
             
-            const dx = other.x - this.x;
-            const dy = other.y - this.y;
-            const distSq = dx * dx + dy * dy;
+            // Outer ring
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+            ctx.strokeStyle = `rgba(78, 205, 196, ${alpha})`;
+            ctx.lineWidth = 3;
+            ctx.stroke();
             
-            // Separation
-            if (distSq < config.separationRadius * config.separationRadius && distSq > 0) {
-                const dist = Math.sqrt(distSq);
-                sepX -= dx / dist;
-                sepY -= dy / dist;
-                sepCount++;
-            }
+            // Inner glow
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius * 0.7, 0, Math.PI * 2);
+            ctx.strokeStyle = `rgba(255, 107, 53, ${alpha * 0.7})`;
+            ctx.lineWidth = 2;
+            ctx.stroke();
             
-            // Alignment
-            if (distSq < config.alignmentRadius * config.alignmentRadius) {
-                aliX += other.vx;
-                aliY += other.vy;
-                aliCount++;
-            }
-            
-            // Cohesion
-            if (distSq < config.cohesionRadius * config.cohesionRadius) {
-                cohX += other.x;
-                cohY += other.y;
-                cohCount++;
-            }
+            ctx.restore();
         }
-        
-        // Apply forces with weights
-        if (sepCount > 0) {
-            this.vx += (sepX / sepCount) * 0.15;
-            this.vy += (sepY / sepCount) * 0.15;
-        }
-        if (aliCount > 0) {
-            this.vx += (aliX / aliCount - this.vx) * 0.05;
-            this.vy += (aliY / aliCount - this.vy) * 0.05;
-        }
-        if (cohCount > 0) {
-            cohX /= cohCount;
-            cohY /= cohCount;
-            this.vx += (cohX - this.x) * 0.0005;
-            this.vy += (cohY - this.y) * 0.0005;
-        }
-    }
-    
-    applyNeuralBehavior(particles) {
-        // Seek connections, form network topology
-        let targetX = 0, targetY = 0, count = 0;
-        
-        for (let other of particles) {
-            if (other === this) continue;
-            
-            const dx = other.x - this.x;
-            const dy = other.y - this.y;
-            const distSq = dx * dx + dy * dy;
-            
-            if (distSq < config.connectionRadius * config.connectionRadius * 2) {
-                const weight = 1 / (1 + Math.sqrt(distSq) * 0.01);
-                targetX += other.x * weight;
-                targetY += other.y * weight;
-                count += weight;
-            }
-        }
-        
-        if (count > 0) {
-            targetX /= count;
-            targetY /= count;
-            this.vx += (targetX - this.x) * 0.001;
-            this.vy += (targetY - this.y) * 0.001;
-        }
-        
-        // Gentle drift
-        this.vx += (Math.random() - 0.5) * 0.1;
-        this.vy += (Math.random() - 0.5) * 0.1;
-    }
-    
-    applyGravity(particles) {
-        // Gravitational attraction to center + mutual attraction
-        const centerX = canvas.width / 2;
-        const centerY = canvas.height / 2;
-        
-        // Attraction to center (weak)
-        const dx = centerX - this.x;
-        const dy = centerY - this.y;
-        const distToCenter = Math.sqrt(dx * dx + dy * dy);
-        if (distToCenter > 0) {
-            this.vx += (dx / distToCenter) * 0.02;
-            this.vy += (dy / distToCenter) * 0.02;
-        }
-        
-        // Mutual attraction (stronger with fewer particles)
-        for (let other of particles) {
-            if (other === this) continue;
-            const odx = other.x - this.x;
-            const ody = other.y - this.y;
-            const distSq = odx * odx + ody * ody;
-            if (distSq > 100 && distSq < 50000) {
-                const force = 50 / distSq;
-                this.vx += odx * force;
-                this.vy += ody * force;
+
+        affect(particle) {
+            const d = dist(this.x, this.y, particle.x, particle.y);
+            const range = 40;
+            if (d < this.radius + range && d > this.radius - range) {
+                const a = angle(this.x, this.y, particle.x, particle.y);
+                const force = this.strength * (1 - Math.abs(d - this.radius) / range);
+                particle.vx += Math.cos(a) * force;
+                particle.vy += Math.sin(a) * force;
             }
         }
     }
-    
-    applyChaos(time) {
-        // Erratic, unpredictable movement
-        const t = time * 0.001;
-        const chaosStrength = 0.5;
-        
-        this.vx += (Math.random() - 0.5) * chaosStrength;
-        this.vy += (Math.random() - 0.5) * chaosStrength;
-        
-        // Occasional "jumps"
-        if (Math.random() < 0.01) {
-            this.vx += (Math.random() - 0.5) * 10;
-            this.vy += (Math.random() - 0.5) * 10;
+
+    // Particle class
+    class Particle {
+        constructor(x, y) {
+            this.x = x ?? random(0, width);
+            this.y = y ?? random(0, height);
+            this.vx = random(-2, 2);
+            this.vy = random(-2, 2);
+            this.radius = random(1.5, 4);
+            this.baseRadius = this.radius;
+            this.color = colors[Math.floor(Math.random() * colors.length)];
+            this.pulse = random(0, Math.PI * 2);
+            this.pulseSpeed = random(0.02, 0.05);
+            this.connections = 0;
+            this.energy = random(0.5, 1);
         }
-        
-        // Noise-driven drift
-        this.vx += noise.noise(this.x * 0.01, t) * 0.2;
-        this.vy += noise.noise(this.y * 0.01, t + 100) * 0.2;
-    }
-    
-    applyNoiseDrift(time) {
-        const t = time * 0.0003;
-        const scale = 0.005;
-        this.vx += noise.noise(this.x * scale, this.y * scale + t) * 0.05;
-        this.vy += noise.noise(this.x * scale + 100, this.y * scale + t) * 0.05;
-    }
-    
-    applyMouseForce() {
-        const dx = mouse.x - this.x;
-        const dy = mouse.y - this.y;
-        const distSq = dx * dx + dy * dy;
-        const radius = 250;
-        
-        if (distSq < radius * radius && distSq > 0) {
-            const dist = Math.sqrt(distSq);
-            const force = (1 - dist / radius) * config.attractionStrength * 0.01;
-            
-            if (mouse.down) {
-                // Repel when mouse down
-                this.vx -= (dx / dist) * force * 2;
-                this.vy -= (dy / dist) * force * 2;
-            } else {
-                // Attract normally
-                this.vx += (dx / dist) * force;
-                this.vy += (dy / dist) * force;
+
+        update() {
+            // Mode-specific behavior
+            switch (config.mode) {
+                case 0: this.emergentBehavior(); break;
+                case 1: this.gravityBehavior(); break;
+                case 2: this.neuralBehavior(); break;
+            }
+
+            // Mouse attraction
+            if (mouse.active) {
+                const d = dist(this.x, this.y, mouse.x, mouse.y);
+                if (d < 300 && d > 20) {
+                    const a = angle(this.x, this.y, mouse.x, mouse.y);
+                    const force = config.attractionForce * (1 - d / 300);
+                    this.vx += Math.cos(a) * force;
+                    this.vy += Math.sin(a) * force;
+                }
+            }
+
+            // Apply shockwaves
+            shockwaves.forEach(sw => sw.affect(this));
+
+            // Damping
+            this.vx *= 0.995;
+            this.vy *= 0.995;
+
+            // Speed limit
+            const speed = Math.sqrt(this.vx ** 2 + this.vy ** 2);
+            if (speed > config.maxSpeed) {
+                this.vx = (this.vx / speed) * config.maxSpeed;
+                this.vy = (this.vy / speed) * config.maxSpeed;
+            }
+
+            // Update position
+            this.x += this.vx;
+            this.y += this.vy;
+
+            // Boundary wrap
+            if (this.x < -this.radius) this.x = width + this.radius;
+            if (this.x > width + this.radius) this.x = -this.radius;
+            if (this.y < -this.radius) this.y = height + this.radius;
+            if (this.y > height + this.radius) this.y = -this.radius;
+
+            // Pulse animation
+            this.pulse += this.pulseSpeed;
+            this.radius = this.baseRadius + Math.sin(this.pulse) * 0.5;
+        }
+
+        emergentBehavior() {
+            // Boids-like flocking
+            const neighbors = [];
+            const perceptionRadius = 80;
+
+            for (const other of particles) {
+                if (other === this) continue;
+                const d = dist(this.x, this.y, other.x, other.y);
+                if (d < perceptionRadius) {
+                    neighbors.push(other);
+                }
+            }
+
+            if (neighbors.length > 0) {
+                // Separation - avoid crowding
+                let sepX = 0, sepY = 0;
+                let alignmentX = 0, alignmentY = 0;
+                let cohesionX = 0, cohesionY = 0;
+
+                for (const n of neighbors) {
+                    // Separation
+                    const d = dist(this.x, this.y, n.x, n.y);
+                    if (d < 30) {
+                        sepX += (this.x - n.x) / d;
+                        sepY += (this.y - n.y) / d;
+                    }
+                    // Alignment
+                    alignmentX += n.vx;
+                    alignmentY += n.vy;
+                    // Cohesion
+                    cohesionX += n.x;
+                    cohesionY += n.y;
+                }
+
+                const count = neighbors.length;
+                alignmentX /= count;
+                alignmentY /= count;
+                cohesionX = (cohesionX / count - this.x) * 0.01;
+                cohesionY = (cohesionY / count - this.y) * 0.01;
+
+                // Apply forces
+                this.vx += sepX * 0.05 + alignmentX * 0.02 + cohesionX * 0.01;
+                this.vy += sepY * 0.05 + alignmentY * 0.02 + cohesionY * 0.01;
+            }
+
+            // Random wandering
+            this.vx += random(-0.1, 0.1);
+            this.vy += random(-0.1, 0.1);
+        }
+
+        gravityBehavior() {
+            // Mutual attraction between particles
+            for (const other of particles) {
+                if (other === this) continue;
+                const d = dist(this.x, this.y, other.x, other.y);
+                if (d < 150 && d > 5) {
+                    const force = 0.5 / (d * 0.1);
+                    const a = angle(this.x, this.y, other.x, other.y);
+                    this.vx += Math.cos(a) * force;
+                    this.vy += Math.sin(a) * force;
+                }
+            }
+
+            // Center pull (weak)
+            const cx = width / 2, cy = height / 2;
+            const dc = dist(this.x, this.y, cx, cy);
+            if (dc > 100) {
+                const a = angle(this.x, this.y, cx, cy);
+                this.vx += Math.cos(a) * 0.01;
+                this.vy += Math.sin(a) * 0.01;
             }
         }
-    }
-    
-    applyShockwaves() {
-        for (let wave of shockwaves) {
-            const dx = this.x - wave.x;
-            const dy = this.y - wave.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
+
+        neuralBehavior() {
+            // Oscillating movement with phase
+            const phase = this.x * 0.01 + this.y * 0.01;
+            this.vx += Math.sin(Date.now() * 0.001 + phase) * 0.02;
+            this.vy += Math.cos(Date.now() * 0.001 + phase) * 0.02;
+
+            // Attraction to "neurons" (random cluster points)
+            const time = Date.now() * 0.0002;
+            const clusterX = width / 2 + Math.sin(time + this.color.charCodeAt(1)) * 200;
+            const clusterY = height / 2 + Math.cos(time * 0.7 + this.color.charCodeAt(2)) * 150;
             
-            if (Math.abs(dist - wave.radius) < 30) {
-                const force = wave.strength * (1 - wave.age / wave.maxAge);
-                this.vx += (dx / dist) * force;
-                this.vy += (dy / dist) * force;
+            const d = dist(this.x, this.y, clusterX, clusterY);
+            if (d > 50) {
+                const a = angle(this.x, this.y, clusterX, clusterY);
+                this.vx += Math.cos(a) * 0.03;
+                this.vy += Math.sin(a) * 0.03;
             }
         }
-    }
-    
-    draw() {
-        // Glow effect
-        const gradient = ctx.createRadialGradient(
-            this.x, this.y, 0,
-            this.x, this.y, this.radius * 3
-        );
-        gradient.addColorStop(0, this.color);
-        gradient.addColorStop(0.4, this.color + '60');
-        gradient.addColorStop(1, 'transparent');
-        
-        ctx.fillStyle = gradient;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.radius * 3, 0, Math.PI * 2);
-        ctx.fill();
-        
-        // Core
-        ctx.fillStyle = '#ffffff';
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.radius * 0.5, 0, Math.PI * 2);
-        ctx.fill();
-    }
-}
 
-// Shockwave effect
-class Shockwave {
-    constructor(x, y) {
-        this.x = x;
-        this.y = y;
-        this.radius = 0;
-        this.maxRadius = 400;
-        this.strength = 2;
-        this.age = 0;
-        this.maxAge = 60;
-    }
-    
-    update() {
-        this.radius += 8;
-        this.age++;
-        return this.age < this.maxAge && this.radius < this.maxRadius;
-    }
-    
-    draw() {
-        const opacity = 1 - this.age / this.maxAge;
-        ctx.strokeStyle = `rgba(255, 255, 255, ${opacity * 0.5})`;
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-        ctx.stroke();
-    }
-}
+        draw(ctx) {
+            // Glow effect
+            const glowSize = this.radius * config.glowIntensity * this.energy;
+            
+            // Outer glow
+            const gradient = ctx.createRadialGradient(
+                this.x, this.y, 0,
+                this.x, this.y, glowSize
+            );
+            gradient.addColorStop(0, this.color + '80');
+            gradient.addColorStop(0.5, this.color + '20');
+            gradient.addColorStop(1, 'transparent');
 
-// Spatial hash for efficient neighbor queries
-class SpatialHash {
-    constructor(cellSize) {
-        this.cellSize = cellSize;
-        this.cells = new Map();
-    }
-    
-    clear() {
-        this.cells.clear();
-    }
-    
-    getKey(x, y) {
-        const cx = Math.floor(x / this.cellSize);
-        const cy = Math.floor(y / this.cellSize);
-        return `${cx},${cy}`;
-    }
-    
-    insert(particle) {
-        const key = this.getKey(particle.x, particle.y);
-        if (!this.cells.has(key)) {
-            this.cells.set(key, []);
+            ctx.save();
+            ctx.globalCompositeOperation = 'screen';
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, glowSize, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Core
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius * 0.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Colored ring
+            ctx.strokeStyle = this.color;
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.restore();
         }
-        this.cells.get(key).push(particle);
     }
-    
-    query(x, y, radius) {
-        const results = [];
-        const r = Math.ceil(radius / this.cellSize);
-        const cx = Math.floor(x / this.cellSize);
-        const cy = Math.floor(y / this.cellSize);
-        
-        for (let i = -r; i <= r; i++) {
-            for (let j = -r; j <= r; j++) {
-                const key = `${cx + i},${cy + j}`;
-                if (this.cells.has(key)) {
-                    results.push(...this.cells.get(key));
+
+    // Initialize particles
+    function initParticles() {
+        particles = [];
+        for (let i = 0; i < config.particleCount; i++) {
+            particles.push(new Particle());
+        }
+    }
+
+    // Draw connections between particles
+    function drawConnections() {
+        let connectionCount = 0;
+        const maxConnections = 3;
+
+        ctx.save();
+        ctx.globalCompositeOperation = 'screen';
+        ctx.lineWidth = 1;
+
+        for (let i = 0; i < particles.length; i++) {
+            const p1 = particles[i];
+            p1.connections = 0;
+
+            for (let j = i + 1; j < particles.length; j++) {
+                if (p1.connections >= maxConnections) break;
+
+                const p2 = particles[j];
+                const d = dist(p1.x, p1.y, p2.x, p2.y);
+
+                if (d < config.connectionRadius) {
+                    const alpha = (1 - d / config.connectionRadius) * 0.5;
+                    
+                    // Gradient connection
+                    const gradient = ctx.createLinearGradient(p1.x, p1.y, p2.x, p2.y);
+                    gradient.addColorStop(0, p1.color + Math.floor(alpha * 255).toString(16).padStart(2, '0'));
+                    gradient.addColorStop(1, p2.color + Math.floor(alpha * 255).toString(16).padStart(2, '0'));
+
+                    ctx.strokeStyle = gradient;
+                    ctx.beginPath();
+                    ctx.moveTo(p1.x, p1.y);
+                    ctx.lineTo(p2.x, p2.y);
+                    ctx.stroke();
+
+                    p1.connections++;
+                    connectionCount++;
+
+                    // Neural mode: pulse data along connection
+                    if (config.mode === 2) {
+                        const pulsePos = (Date.now() * 0.002) % 1;
+                        const px = p1.x + (p2.x - p1.x) * pulsePos;
+                        const py = p1.y + (p2.y - p1.y) * pulsePos;
+                        
+                        ctx.fillStyle = '#ffffff';
+                        ctx.beginPath();
+                        ctx.arc(px, py, 2, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
                 }
             }
         }
-        return results;
+
+        ctx.restore();
+        return connectionCount;
     }
-}
 
-const spatialHash = new SpatialHash(100);
-
-// Initialize particles
-function initParticles() {
-    particles = [];
-    for (let i = 0; i < config.particleCount; i++) {
-        particles.push(new Particle());
+    // Draw background gradient
+    function drawBackground() {
+        const gradient = ctx.createRadialGradient(
+            width / 2, height / 2, 0,
+            width / 2, height / 2, Math.max(width, height)
+        );
+        gradient.addColorStop(0, '#0a0a15');
+        gradient.addColorStop(1, '#050508');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, width, height);
     }
-}
 
-// Draw connections between nearby particles
-function drawConnections() {
-    const maxConnections = 3;
-    
-    for (let i = 0; i < particles.length; i++) {
-        const p1 = particles[i];
-        let connections = 0;
+    // Cycle through modes
+    function cycleMode() {
+        config.mode = (config.mode + 1) % modes.length;
+        const mode = modes[config.mode];
         
-        // Use spatial hash for efficiency
-        const neighbors = spatialHash.query(p1.x, p1.y, config.connectionRadius);
+        modeEl.textContent = `Mode: ${mode.name}`;
+        modeIndicator.textContent = mode.emoji;
+        modeIndicator.style.color = mode.color;
+        modeIndicator.classList.add('show');
         
-        for (let p2 of neighbors) {
-            if (p2 === p1 || p2.id < p1.id) continue;
-            if (connections >= maxConnections) break;
-            
-            const dx = p2.x - p1.x;
-            const dy = p2.y - p1.y;
-            const distSq = dx * dx + dy * dy;
-            
-            if (distSq < config.connectionRadius * config.connectionRadius) {
-                const dist = Math.sqrt(distSq);
-                const opacity = (1 - dist / config.connectionRadius) * 0.4;
-                
-                // Gradient line
-                const gradient = ctx.createLinearGradient(p1.x, p1.y, p2.x, p2.y);
-                gradient.addColorStop(0, p1.color + Math.floor(opacity * 255).toString(16).padStart(2, '0'));
-                gradient.addColorStop(1, p2.color + Math.floor(opacity * 255).toString(16).padStart(2, '0'));
-                
-                ctx.strokeStyle = gradient;
-                ctx.lineWidth = 1 + (1 - dist / config.connectionRadius);
-                ctx.beginPath();
-                ctx.moveTo(p1.x, p1.y);
-                ctx.lineTo(p2.x, p2.y);
-                ctx.stroke();
-                
-                connections++;
-            }
+        setTimeout(() => modeIndicator.classList.remove('show'), 1500);
+
+        // Reset velocities on mode change for dramatic effect
+        particles.forEach(p => {
+            p.vx *= 0.5;
+            p.vy *= 0.5;
+        });
+    }
+
+    // Main animation loop
+    function animate() {
+        // Calculate FPS
+        const now = performance.now();
+        frameCount++;
+        if (now - lastTime >= 1000) {
+            fps = frameCount;
+            frameCount = 0;
+            lastTime = now;
+            fpsEl.textContent = `FPS: ${fps}`;
         }
-    }
-}
 
-// Main animation loop
-function animate(time) {
-    // FPS calculation
-    frameCount++;
-    const now = performance.now();
-    if (now - lastTime >= 1000) {
-        fps = frameCount;
-        frameCount = 0;
-        lastTime = now;
-        document.getElementById('fps').textContent = `FPS: ${fps}`;
+        // Clear with fade effect
+        ctx.fillStyle = `rgba(5, 5, 8, ${config.trailFade})`;
+        ctx.fillRect(0, 0, width, height);
+
+        // Draw background
+        drawBackground();
+
+        // Update and draw shockwaves
+        shockwaves = shockwaves.filter(sw => {
+            const alive = sw.update();
+            if (alive) sw.draw(ctx);
+            return alive;
+        });
+
+        // Update particles
+        particles.forEach(p => p.update());
+
+        // Draw connections
+        const connectionCount = drawConnections();
+
+        // Draw particles
+        particles.forEach(p => p.draw(ctx));
+
+        // Update stats
+        particlesEl.textContent = `Particles: ${particles.length}`;
+        connectionsEl.textContent = `Connections: ${connectionCount}`;
+
+        animationId = requestAnimationFrame(animate);
     }
-    
-    // Clear canvas with fade effect
-    ctx.fillStyle = 'rgba(5, 5, 8, 0.3)';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    // Update spatial hash
-    spatialHash.clear();
-    for (let p of particles) {
-        spatialHash.insert(p);
-    }
-    
-    // Update and draw connections first (behind particles)
-    drawConnections();
-    
-    // Update and draw particles
-    for (let p of particles) {
-        p.update(particles, time);
-        p.draw();
-    }
-    
-    // Update and draw shockwaves
-    shockwaves = shockwaves.filter(w => {
-        const alive = w.update();
-        if (alive) w.draw();
-        return alive;
+
+    // Event handlers
+    window.addEventListener('resize', resize);
+
+    canvas.addEventListener('mousemove', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        mouse.x = e.clientX - rect.left;
+        mouse.y = e.clientY - rect.top;
+        mouse.active = true;
     });
-    
-    // Update stats
-    let connectionCount = 0;
-    for (let p of particles) {
-        const neighbors = spatialHash.query(p.x, p.y, config.connectionRadius);
-        connectionCount += neighbors.filter(n => n !== p).length;
-    }
-    document.getElementById('particles').textContent = `Particles: ${particles.length}`;
-    document.getElementById('connections').textContent = `Connections: ${Math.floor(connectionCount / 2)}`;
-    
-    requestAnimationFrame(animate);
-}
 
-// Event listeners
-window.addEventListener('mousemove', e => {
-    mouse.x = e.clientX;
-    mouse.y = e.clientY;
-});
+    canvas.addEventListener('mouseleave', () => {
+        mouse.active = false;
+    });
 
-window.addEventListener('mousedown', () => {
-    mouse.down = true;
-    shockwaves.push(new Shockwave(mouse.x, mouse.y));
-});
+    canvas.addEventListener('mousedown', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        shockwaves.push(new Shockwave(
+            e.clientX - rect.left,
+            e.clientY - rect.top
+        ));
+    });
 
-window.addEventListener('mouseup', () => {
-    mouse.down = false;
-});
+    document.addEventListener('keydown', (e) => {
+        if (e.code === 'Space') {
+            e.preventDefault();
+            cycleMode();
+        }
+    });
 
-window.addEventListener('keydown', e => {
-    if (e.code === 'Space') {
+    // Control handlers
+    particleCountSlider.addEventListener('input', (e) => {
+        const count = parseInt(e.target.value);
+        const diff = count - particles.length;
+        
+        if (diff > 0) {
+            for (let i = 0; i < diff; i++) {
+                particles.push(new Particle());
+            }
+        } else {
+            particles.splice(0, -diff);
+        }
+        config.particleCount = count;
+    });
+
+    connectionRadiusSlider.addEventListener('input', (e) => {
+        config.connectionRadius = parseInt(e.target.value);
+    });
+
+    attractionSlider.addEventListener('input', (e) => {
+        config.attractionForce = parseInt(e.target.value) / 100;
+    });
+
+    // Touch support for mobile
+    canvas.addEventListener('touchmove', (e) => {
         e.preventDefault();
-        const modes = ['emergent', 'neural', 'gravity', 'chaos'];
-        const currentIndex = modes.indexOf(config.mode);
-        config.mode = modes[(currentIndex + 1) % modes.length];
-        document.getElementById('mode').textContent = `Mode: ${config.mode.charAt(0).toUpperCase() + config.mode.slice(1)}`;
-        
-        // Show mode indicator
-        const indicator = document.getElementById('modeIndicator');
-        const emojis = { emergent: '🌌', neural: '🧠', gravity: '🌟', chaos: '⚡' };
-        indicator.textContent = emojis[config.mode];
-        indicator.classList.add('show');
-        setTimeout(() => indicator.classList.remove('show'), 800);
-        
-        // Update particle colors
-        const palette = palettes[config.mode];
-        for (let p of particles) {
-            p.color = palette[Math.floor(Math.random() * palette.length)];
-        }
-    }
-});
+        const touch = e.touches[0];
+        const rect = canvas.getBoundingClientRect();
+        mouse.x = touch.clientX - rect.left;
+        mouse.y = touch.clientY - rect.top;
+        mouse.active = true;
+    }, { passive: false });
 
-// UI controls
-document.getElementById('particleCount').addEventListener('input', e => {
-    const newCount = parseInt(e.target.value);
-    if (newCount > particles.length) {
-        for (let i = particles.length; i < newCount; i++) {
-            particles.push(new Particle());
-        }
-    } else {
-        particles.splice(newCount);
-    }
-    config.particleCount = newCount;
-});
+    canvas.addEventListener('touchend', () => {
+        mouse.active = false;
+    });
 
-document.getElementById('connectionRadius').addEventListener('input', e => {
-    config.connectionRadius = parseInt(e.target.value);
-});
+    canvas.addEventListener('touchstart', (e) => {
+        const touch = e.touches[0];
+        const rect = canvas.getBoundingClientRect();
+        shockwaves.push(new Shockwave(
+            touch.clientX - rect.left,
+            touch.clientY - rect.top
+        ));
+    }, { passive: false });
 
-document.getElementById('attraction').addEventListener('input', e => {
-    config.attractionStrength = parseInt(e.target.value) / 100;
-});
+    // Initialize
+    resize();
+    initParticles();
+    animate();
 
-// Touch support for mobile
-window.addEventListener('touchmove', e => {
-    e.preventDefault();
-    mouse.x = e.touches[0].clientX;
-    mouse.y = e.touches[0].clientY;
-}, { passive: false });
-
-window.addEventListener('touchstart', e => {
-    mouse.x = e.touches[0].clientX;
-    mouse.y = e.touches[0].clientY;
-    mouse.down = true;
-    shockwaves.push(new Shockwave(mouse.x, mouse.y));
-});
-
-window.addEventListener('touchend', () => {
-    mouse.down = false;
-});
-
-// Initialize and start
-initParticles();
-requestAnimationFrame(animate);
+    // Expose to global for debugging
+    window.neuralConstellation = { config, particles, shockwaves, cycleMode };
+})();
