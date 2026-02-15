@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Digital Ecosystem - Earl's Workshop</title>
+    <title>Digital Ecosystem Simulation</title>
     <style>
         * {
             margin: 0;
@@ -13,157 +13,237 @@
 
         body {
             background: #0a0a0f;
-            color: #e0e0e0;
+            color: #fff;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             overflow: hidden;
-            position: relative;
+            user-select: none;
         }
 
         #canvas {
-            display: block;
-            background: radial-gradient(ellipse at center, #0f1419 0%, #0a0a0f 100%);
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: radial-gradient(ellipse at center, #0d1117 0%, #0a0a0f 100%);
         }
 
-        .ui-overlay {
-            position: absolute;
+        /* Title Overlay */
+        .title-overlay {
+            position: fixed;
             top: 20px;
-            left: 20px;
-            background: rgba(10, 10, 15, 0.9);
-            border: 1px solid rgba(100, 200, 255, 0.2);
-            border-radius: 12px;
-            padding: 20px;
-            backdrop-filter: blur(10px);
-            max-width: 300px;
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
-        }
-
-        .title {
-            font-size: 1.5rem;
-            font-weight: 300;
-            margin-bottom: 5px;
-            background: linear-gradient(135deg, #4ade80 0%, #3b82f6 50%, #f472b6 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .subtitle {
-            font-size: 0.85rem;
-            color: #6b7280;
-            margin-bottom: 20px;
-        }
-
-        .stats {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .stat {
-            background: rgba(255, 255, 255, 0.03);
-            padding: 10px;
-            border-radius: 8px;
+            left: 50%;
+            transform: translateX(-50%);
             text-align: center;
-        }
-
-        .stat-value {
-            font-size: 1.5rem;
-            font-weight: 600;
-        }
-
-        .stat-label {
-            font-size: 0.7rem;
-            color: #6b7280;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .herbivore-count { color: #4ade80; }
-        .predator-count { color: #f87171; }
-        .food-count { color: #fbbf24; }
-        .generation-count { color: #60a5fa; }
-
-        .controls {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-
-        button {
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #e0e0e0;
-            padding: 8px 14px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.8rem;
-            transition: all 0.2s ease;
-        }
-
-        button:hover {
-            background: rgba(255, 255, 255, 0.15);
-            transform: translateY(-1px);
-        }
-
-        button:active {
-            transform: translateY(0);
-        }
-
-        button.primary {
-            background: rgba(59, 130, 246, 0.2);
-            border-color: rgba(59, 130, 246, 0.4);
-        }
-
-        button.primary:hover {
-            background: rgba(59, 130, 246, 0.3);
-        }
-
-        button.danger {
-            background: rgba(248, 113, 113, 0.2);
-            border-color: rgba(248, 113, 113, 0.4);
-        }
-
-        button.danger:hover {
-            background: rgba(248, 113, 113, 0.3);
-        }
-
-        button.success {
-            background: rgba(74, 222, 128, 0.2);
-            border-color: rgba(74, 222, 128, 0.4);
-        }
-
-        button.success:hover {
-            background: rgba(74, 222, 128, 0.3);
-        }
-
-        .instructions {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            right: 20px;
-            text-align: center;
-            color: #6b7280;
-            font-size: 0.85rem;
+            z-index: 100;
             pointer-events: none;
         }
 
-        .legend {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: rgba(10, 10, 15, 0.9);
-            border: 1px solid rgba(100, 200, 255, 0.2);
-            border-radius: 12px;
-            padding: 15px;
+        .title-overlay h1 {
+            font-size: 2rem;
+            font-weight: 300;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            background: linear-gradient(90deg, #00ff88, #00ccff, #00ff88);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: shimmer 3s linear infinite;
+            text-shadow: 0 0 30px rgba(0, 255, 136, 0.3);
+        }
+
+        .title-overlay .subtitle {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 0.2em;
+            margin-top: 5px;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 0% center; }
+            100% { background-position: 200% center; }
+        }
+
+        /* Stats Panel */
+        .stats-panel {
+            position: fixed;
+            top: 80px;
+            left: 20px;
+            background: rgba(10, 10, 15, 0.8);
             backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 16px 20px;
+            z-index: 100;
+            min-width: 180px;
+        }
+
+        .stats-panel h3 {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 8px 0;
+            font-size: 0.9rem;
+        }
+
+        .stat-label {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .stat-value {
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .stat-value.herbivores { color: #00ff88; }
+        .stat-value.predators { color: #ff4444; }
+        .stat-value.food { color: #ffaa00; }
+        .stat-value.generation { color: #00ccff; }
+        .stat-value.oldest { color: #ff88ff; }
+
+        /* Control Panel */
+        .control-panel {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 12px;
+            z-index: 100;
+            background: rgba(10, 10, 15, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 12px 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn {
+            background: linear-gradient(145deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #fff;
+            padding: 10px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 500;
+            letter-spacing: 0.05em;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+        }
+
+        .btn:hover {
+            background: linear-gradient(145deg, rgba(255,255,255,0.2), rgba(255,255,255,0.1));
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn.primary {
+            background: linear-gradient(145deg, #00ff88, #00cc66);
+            border-color: #00ff88;
+            color: #0a0a0f;
+        }
+
+        .btn.primary:hover {
+            box-shadow: 0 4px 20px rgba(0, 255, 136, 0.4);
+        }
+
+        .btn.danger {
+            background: linear-gradient(145deg, #ff4444, #cc3333);
+            border-color: #ff4444;
+            color: #fff;
+        }
+
+        .btn.danger:hover {
+            box-shadow: 0 4px 20px rgba(255, 68, 68, 0.4);
+        }
+
+        .btn.warning {
+            background: linear-gradient(145deg, #ffaa00, #cc8800);
+            border-color: #ffaa00;
+            color: #0a0a0f;
+        }
+
+        .btn.warning:hover {
+            box-shadow: 0 4px 20px rgba(255, 170, 0, 0.4);
+        }
+
+        /* Help Tooltip */
+        .help-tooltip {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(10, 10, 15, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 12px 20px;
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.6);
+            z-index: 100;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .help-tooltip.visible {
+            opacity: 1;
+        }
+
+        .help-tooltip span {
+            margin: 0 10px;
+        }
+
+        .help-tooltip .key {
+            color: #00ff88;
+            font-weight: 600;
+        }
+
+        /* Species Legend */
+        .legend {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: rgba(10, 10, 15, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 16px 20px;
+            z-index: 100;
+        }
+
+        .legend h3 {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .legend-item {
             display: flex;
             align-items: center;
             gap: 10px;
-            margin-bottom: 8px;
+            margin: 8px 0;
             font-size: 0.85rem;
         }
 
@@ -171,554 +251,1033 @@
             width: 12px;
             height: 12px;
             border-radius: 50%;
+            box-shadow: 0 0 10px currentColor;
         }
 
-        .dot-herbivore { background: #4ade80; box-shadow: 0 0 10px #4ade80; }
-        .dot-predator { background: #f87171; box-shadow: 0 0 10px #f87171; }
-        .dot-food { background: #fbbf24; box-shadow: 0 0 10px #fbbf24; }
+        .legend-dot.herbivore { background: #00ff88; color: #00ff88; }
+        .legend-dot.predator { background: #ff4444; color: #ff4444; }
+        .legend-dot.berry { background: #ffaa00; color: #ffaa00; }
+        .legend-dot.fruit { background: #ff66aa; color: #ff66aa; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .title-overlay h1 {
+                font-size: 1.2rem;
+            }
+            .stats-panel {
+                top: auto;
+                bottom: 100px;
+                left: 10px;
+                padding: 12px 16px;
+                min-width: 150px;
+            }
+            .legend {
+                top: 80px;
+                right: 10px;
+                padding: 12px 16px;
+            }
+            .control-panel {
+                bottom: 10px;
+                padding: 10px 15px;
+                gap: 8px;
+            }
+            .btn {
+                padding: 8px 12px;
+                font-size: 0.7rem;
+            }
+        }
     </style>
 </head>
 <body>
     <canvas id="canvas"></canvas>
-    
-    <div class="ui-overlay">
-        <div class="title">Digital Ecosystem</div>
-        <div class="subtitle">Earl's Workshop — Emergent Life Simulation</div>
-        
-        <div class="stats">
-            <div class="stat">
-                <div class="stat-value herbivore-count" id="herbivoreCount">0</div>
-                <div class="stat-label">Herbivores</div>
-            </div>
-            <div class="stat">
-                <div class="stat-value predator-count" id="predatorCount">0</div>
-                <div class="stat-label">Predators</div>
-            </div>
-            <div class="stat">
-                <div class="stat-value food-count" id="foodCount">0</div>
-                <div class="stat-label">Food</div>
-            </div>
-            <div class="stat">
-                <div class="stat-value generation-count" id="generationCount">0</div>
-                <div class="stat-label">Generation</div>
-            </div>
-        </div>
 
-        <div class="controls">
-            <button class="primary" onclick="togglePause()">⏯ Pause</button>
-            <button class="success" onclick="addHerbivores(5)">+ 🌿 Herbivore</button>
-            <button class="danger" onclick="addPredators(2)">+ 🥩 Predator</button>
-            <button onclick="resetSimulation()">↺ Reset</button>
+    <!-- Title Overlay -->
+    <div class="title-overlay">
+        <h1>Lumina Ecosystem</h1>
+        <div class="subtitle">Living Digital World Simulation</div>
+    </div>
+
+    <!-- Stats Panel -->
+    <div class="stats-panel">
+        <h3>Ecosystem Stats</h3>
+        <div class="stat-row">
+            <span class="stat-label">Herbivores</span>
+            <span class="stat-value herbivores" id="herbivore-count">0</span>
+        </div>
+        <div class="stat-row">
+            <span class="stat-label">Predators</span>
+            <span class="stat-value predators" id="predator-count">0</span>
+        </div>
+        <div class="stat-row">
+            <span class="stat-label">Food</span>
+            <span class="stat-value food" id="food-count">0</span>
+        </div>
+        <div class="stat-row">
+            <span class="stat-label">Generation</span>
+            <span class="stat-value generation" id="generation-count">0</span>
+        </div>
+        <div class="stat-row">
+            <span class="stat-label">Oldest</span>
+            <span class="stat-value oldest" id="oldest-creature">0s</span>
         </div>
     </div>
 
+    <!-- Legend -->
     <div class="legend">
+        <h3>Species</h3>
         <div class="legend-item">
-            <div class="legend-dot dot-herbivore"></div>
-            <span>Herbivore (eats plants)</span>
+            <div class="legend-dot herbivore"></div>
+            <span>Herbivore</span>
         </div>
         <div class="legend-item">
-            <div class="legend-dot dot-predator"></div>
-            <span>Predator (hunts herbivores)</span>
+            <div class="legend-dot predator"></div>
+            <span>Predator</span>
         </div>
         <div class="legend-item">
-            <div class="legend-dot dot-food"></div>
-            <span>Plant Food</span>
+            <div class="legend-dot berry"></div>
+            <span>Berry (+15)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-dot fruit"></div>
+            <span>Fruit (+35)</span>
         </div>
     </div>
 
-    <div class="instructions">
-        Click to spawn food • Drag to create wind • Watch the ecosystem evolve
+    <!-- Control Panel -->
+    <div class="control-panel">
+        <button class="btn primary" id="btn-pause">Pause</button>
+        <button class="btn" id="btn-reset">Reset</button>
+        <button class="btn" id="btn-herbivore">+ Herbivore</button>
+        <button class="btn danger" id="btn-predator">+ Predator</button>
+    </div>
+
+    <!-- Help Tooltip -->
+    <div class="help-tooltip visible" id="help-tooltip">
+        <span><span class="key">Click</span> spawn food</span>
+        <span><span class="key">Drag</span> create wind</span>
     </div>
 
     <script>
+        // ============================================
+        // DIGITAL ECOSYSTEM SIMULATION
+        // A living artificial world with autonomous agents
+        // ============================================
+
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
-        
-        let width, height;
+
+        // Configuration
+        const CONFIG = {
+            INITIAL_HERBIVORES: 15,
+            INITIAL_PREDATORS: 3,
+            INITIAL_FOOD: 30,
+            MAX_FOOD: 80,
+            FOOD_SPAWN_RATE: 0.05,
+            WORLD_WIDTH: 0,
+            WORLD_HEIGHT: 0,
+            TRAIL_LENGTH: 15,
+            ENERGY_DECAY_HERBIVORE: 0.08,
+            ENERGY_DECAY_PREDATOR: 0.12,
+            REPRODUCTION_THRESHOLD: 80,
+            REPRODUCTION_COST: 40,
+            FOOD_ENERGY_BERRY: 15,
+            FOOD_ENERGY_FRUIT: 35,
+            PREDATOR_DAMAGE: 25,
+            VIEW_RADIUS_HERBIVORE: 100,
+            VIEW_RADIUS_PREDATOR: 150,
+            FLEE_RADIUS: 80,
+            HUNT_RADIUS: 120,
+            MAX_SPEED_HERBIVORE: 2.5,
+            MAX_SPEED_PREDATOR: 3.2,
+            MAX_FORCE: 0.15,
+            WIND_DECAY: 0.95,
+            WIND_STRENGTH: 0.5
+        };
+
+        // Simulation state
         let isPaused = false;
         let frameCount = 0;
-        let generation = 0;
+        let generation = 1;
+        let oldestCreatureAge = 0;
+        let mouseX = 0;
+        let mouseY = 0;
+        let isDragging = false;
+        let dragStartX = 0;
+        let dragStartY = 0;
+        let windField = [];
 
-        // Resize handling
-        function resize() {
-            width = window.innerWidth;
-            height = window.innerHeight;
-            canvas.width = width;
-            canvas.height = height;
+        // Entity arrays
+        let herbivores = [];
+        let predators = [];
+        let foods = [];
+        let particles = [];
+
+        // ============================================
+        // UTILITY FUNCTIONS
+        // ============================================
+
+        function random(min, max) {
+            return Math.random() * (max - min) + min;
         }
-        window.addEventListener('resize', resize);
-        resize();
 
-        // Utility functions
-        const dist = (x1, y1, x2, y2) => Math.sqrt((x2-x1)**2 + (y2-y1)**2);
-        const random = (min, max) => Math.random() * (max - min) + min;
-        const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
+        function randomInt(min, max) {
+            return Math.floor(random(min, max));
+        }
 
-        // Vector math
+        function distance(x1, y1, x2, y2) {
+            return Math.hypot(x2 - x1, y2 - y1);
+        }
+
+        function normalizeAngle(angle) {
+            while (angle > Math.PI) angle -= Math.PI * 2;
+            while (angle < -Math.PI) angle += Math.PI * 2;
+            return angle;
+        }
+
+        function lerp(a, b, t) {
+            return a + (b - a) * t;
+        }
+
+        // ============================================
+        // VECTOR UTILITY
+        // ============================================
+
         class Vector {
             constructor(x, y) {
                 this.x = x;
                 this.y = y;
             }
-            add(v) { this.x += v.x; this.y += v.y; return this; }
-            sub(v) { this.x -= v.x; this.y -= v.y; return this; }
-            mult(n) { this.x *= n; this.y *= n; return this; }
-            mag() { return Math.sqrt(this.x**2 + this.y**2); }
+
+            add(v) {
+                return new Vector(this.x + v.x, this.y + v.y);
+            }
+
+            sub(v) {
+                return new Vector(this.x - v.x, this.y - v.y);
+            }
+
+            mult(n) {
+                return new Vector(this.x * n, this.y * n);
+            }
+
+            div(n) {
+                return new Vector(this.x / n, this.y / n);
+            }
+
+            mag() {
+                return Math.hypot(this.x, this.y);
+            }
+
             normalize() {
                 const m = this.mag();
-                if (m > 0) { this.x /= m; this.y /= m; }
-                return this;
+                if (m === 0) return new Vector(0, 0);
+                return this.div(m);
             }
+
             limit(max) {
-                const m = this.mag();
-                if (m > max) { this.normalize().mult(max); }
-                return this;
+                if (this.mag() > max) {
+                    return this.normalize().mult(max);
+                }
+                return new Vector(this.x, this.y);
             }
-            copy() { return new Vector(this.x, this.y); }
-            static sub(v1, v2) { return new Vector(v1.x - v2.x, v1.y - v2.y); }
-            static random() {
-                const angle = random(0, Math.PI * 2);
+
+            heading() {
+                return Math.atan2(this.y, this.x);
+            }
+
+            static fromAngle(angle) {
                 return new Vector(Math.cos(angle), Math.sin(angle));
+            }
+
+            copy() {
+                return new Vector(this.x, this.y);
             }
         }
 
-        // Food class
+        // ============================================
+        // PARTICLE SYSTEM (for effects)
+        // ============================================
+
+        class Particle {
+            constructor(x, y, color, speed, life) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                this.vx = random(-speed, speed);
+                this.vy = random(-speed, speed);
+                this.life = life;
+                this.maxLife = life;
+                this.size = random(2, 5);
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.life--;
+                this.size *= 0.98;
+                return this.life > 0;
+            }
+
+            draw(ctx) {
+                const alpha = this.life / this.maxLife;
+                ctx.save();
+                ctx.globalAlpha = alpha;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        function spawnParticles(x, y, color, count = 8, speed = 3) {
+            for (let i = 0; i < count; i++) {
+                particles.push(new Particle(x, y, color, speed, randomInt(20, 40)));
+            }
+        }
+
+        // ============================================
+        // FOOD SYSTEM
+        // ============================================
+
         class Food {
-            constructor(x, y, size = 3) {
-                this.pos = new Vector(x, y);
-                this.size = size;
-                this.energy = size * 5;
+            constructor(x, y, type = 'berry') {
+                this.x = x;
+                this.y = y;
+                this.type = type;
+                this.energy = type === 'berry' ? CONFIG.FOOD_ENERGY_BERRY : CONFIG.FOOD_ENERGY_FRUIT;
+                this.size = type === 'berry' ? 4 : 7;
                 this.pulse = random(0, Math.PI * 2);
+                this.color = type === 'berry' ? '#ffaa00' : '#ff66aa';
+                this.glowColor = type === 'berry' ? 'rgba(255, 170, 0, 0.5)' : 'rgba(255, 102, 170, 0.5)';
             }
 
             update() {
                 this.pulse += 0.05;
             }
 
-            draw() {
-                const glow = Math.sin(this.pulse) * 0.3 + 0.7;
-                ctx.beginPath();
-                ctx.arc(this.pos.x, this.pos.y, this.size * glow, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(251, 191, 36, ${glow})`;
+            draw(ctx) {
+                const pulseSize = this.size + Math.sin(this.pulse) * 1;
+                
+                // Glow
+                ctx.save();
+                ctx.shadowColor = this.color;
                 ctx.shadowBlur = 15;
-                ctx.shadowColor = '#fbbf24';
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, pulseSize, 0, Math.PI * 2);
                 ctx.fill();
-                ctx.shadowBlur = 0;
+                ctx.restore();
+
+                // Inner core
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, pulseSize * 0.4, 0, Math.PI * 2);
+                ctx.fill();
             }
         }
 
-        // Creature base class
-        class Creature {
-            constructor(x, y, species) {
-                this.pos = new Vector(x, y);
-                this.vel = Vector.random().mult(2);
-                this.acc = new Vector(0, 0);
-                this.species = species; // 'herbivore' or 'predator'
-                this.energy = 100;
-                this.maxEnergy = 150;
-                this.age = 0;
-                this.maxSpeed = species === 'herbivore' ? 3 : 3.5;
-                this.maxForce = 0.1;
-                this.size = species === 'herbivore' ? 6 : 8;
-                this.perception = species === 'herbivore' ? 100 : 150;
-                this.reproThreshold = 120;
-                this.trail = [];
-                this.trailLength = 10;
-                this.wanderTheta = 0;
+        function spawnFood(x, y, type = null) {
+            if (!type) {
+                type = Math.random() < 0.7 ? 'berry' : 'fruit';
+            }
+            foods.push(new Food(x, y, type));
+        }
+
+        function spawnRandomFood() {
+            if (foods.length >= CONFIG.MAX_FOOD) return;
+            const margin = 50;
+            const x = random(margin, CONFIG.WORLD_WIDTH - margin);
+            const y = random(margin, CONFIG.WORLD_HEIGHT - margin);
+            spawnFood(x, y);
+        }
+
+        // ============================================
+        // WIND FIELD
+        // ============================================
+
+        class WindField {
+            constructor() {
+                this.cells = [];
+                this.cellSize = 50;
+                this.cols = 0;
+                this.rows = 0;
             }
 
-            applyForce(force) {
-                this.acc.add(force);
+            init() {
+                this.cols = Math.ceil(CONFIG.WORLD_WIDTH / this.cellSize);
+                this.rows = Math.ceil(CONFIG.WORLD_HEIGHT / this.cellSize);
+                this.cells = new Array(this.cols * this.rows).fill(null).map(() => new Vector(0, 0));
             }
 
-            seek(target) {
-                const desired = Vector.sub(target, this.pos);
-                desired.normalize().mult(this.maxSpeed);
-                const steer = Vector.sub(desired, this.vel);
-                steer.limit(this.maxForce);
-                return steer;
+            getCellIndex(x, y) {
+                const col = Math.floor(x / this.cellSize);
+                const row = Math.floor(y / this.cellSize);
+                if (col < 0 || col >= this.cols || row < 0 || row >= this.rows) return -1;
+                return row * this.cols + col;
             }
 
-            flee(target) {
-                const desired = Vector.sub(this.pos, target);
-                desired.normalize().mult(this.maxSpeed);
-                const steer = Vector.sub(desired, this.vel);
-                steer.limit(this.maxForce * 2);
-                return steer;
-            }
-
-            wander() {
-                const wanderR = 25;
-                const wanderD = 80;
-                const change = 0.3;
-                this.wanderTheta += random(-change, change);
-                
-                const circlePos = this.vel.copy().normalize().mult(wanderD).add(this.pos);
-                const h = this.vel.mag() === 0 ? 0 : Math.atan2(this.vel.y, this.vel.x);
-                const circleOffset = new Vector(
-                    wanderR * Math.cos(this.wanderTheta + h),
-                    wanderR * Math.sin(this.wanderTheta + h)
-                );
-                const target = circlePos.add(circleOffset);
-                return this.seek(target);
-            }
-
-            boundaries() {
-                const margin = 50;
-                const turnForce = new Vector(0, 0);
-                
-                if (this.pos.x < margin) turnForce.x = this.maxSpeed;
-                if (this.pos.x > width - margin) turnForce.x = -this.maxSpeed;
-                if (this.pos.y < margin) turnForce.y = this.maxSpeed;
-                if (this.pos.y > height - margin) turnForce.y = -this.maxSpeed;
-                
-                if (turnForce.mag() > 0) {
-                    turnForce.normalize().mult(this.maxForce * 3);
-                }
-                return turnForce;
-            }
-
-            update(foods, herbivores, predators) {
-                this.age++;
-                this.energy -= 0.2;
-                
-                // Trail
-                this.trail.push(this.pos.copy());
-                if (this.trail.length > this.trailLength) this.trail.shift();
-
-                // Behavior based on species
-                if (this.species === 'herbivore') {
-                    this.herbivoreBehavior(foods, predators);
-                } else {
-                    this.predatorBehavior(herbivores);
-                }
-
-                // Physics
-                this.applyForce(this.boundaries());
-                this.vel.add(this.acc);
-                this.vel.limit(this.maxSpeed);
-                this.pos.add(this.vel);
-                this.acc.mult(0);
-
-                // Wrap around edges (soft)
-                if (this.pos.x < -10) this.pos.x = width + 10;
-                if (this.pos.x > width + 10) this.pos.x = -10;
-                if (this.pos.y < -10) this.pos.y = height + 10;
-                if (this.pos.y > height + 10) this.pos.y = -10;
-
-                return this.energy > 0;
-            }
-
-            herbivoreBehavior(foods, predators) {
-                let closestFood = null;
-                let closestDist = Infinity;
-                let closestPredator = null;
-                let closestPredatorDist = Infinity;
-
-                // Find closest food
-                for (const food of foods) {
-                    const d = dist(this.pos.x, this.pos.y, food.pos.x, food.pos.y);
-                    if (d < this.perception && d < closestDist) {
-                        closestDist = d;
-                        closestFood = food;
+            addWind(x, y, vx, vy, radius = 100) {
+                for (let i = 0; i < this.cells.length; i++) {
+                    const col = i % this.cols;
+                    const row = Math.floor(i / this.cols);
+                    const cx = col * this.cellSize + this.cellSize / 2;
+                    const cy = row * this.cellSize + this.cellSize / 2;
+                    const dist = distance(x, y, cx, cy);
+                    if (dist < radius) {
+                        const force = (1 - dist / radius) * CONFIG.WIND_STRENGTH;
+                        this.cells[i].x += vx * force;
+                        this.cells[i].y += vy * force;
                     }
                 }
+            }
 
-                // Find closest predator to flee from
-                for (const predator of predators) {
-                    const d = dist(this.pos.x, this.pos.y, predator.pos.x, predator.pos.y);
-                    if (d < this.perception && d < closestPredatorDist) {
-                        closestPredatorDist = d;
-                        closestPredator = predator;
-                    }
+            getWindAt(x, y) {
+                const idx = this.getCellIndex(x, y);
+                if (idx >= 0) {
+                    return this.cells[idx].copy();
                 }
+                return new Vector(0, 0);
+            }
 
-                // Prioritize fleeing over eating
-                if (closestPredator && closestPredatorDist < 80) {
-                    this.applyForce(this.flee(closestPredator.pos).mult(2));
-                } else if (closestFood) {
-                    this.applyForce(this.seek(closestFood.pos));
-                    if (closestDist < this.size + closestFood.size) {
-                        this.energy = Math.min(this.maxEnergy, this.energy + closestFood.energy);
-                        foods.splice(foods.indexOf(closestFood), 1);
-                    }
-                } else {
-                    this.applyForce(this.wander());
+            update() {
+                for (let cell of this.cells) {
+                    cell.x *= CONFIG.WIND_DECAY;
+                    cell.y *= CONFIG.WIND_DECAY;
                 }
             }
 
-            predatorBehavior(herbivores) {
-                let closestPrey = null;
-                let closestDist = Infinity;
-
-                for (const herbivore of herbivores) {
-                    const d = dist(this.pos.x, this.pos.y, herbivore.pos.x, herbivore.pos.y);
-                    if (d < this.perception && d < closestDist) {
-                        closestDist = d;
-                        closestPrey = herbivore;
-                    }
-                }
-
-                if (closestPrey) {
-                    this.applyForce(this.seek(closestPrey.pos).mult(1.5));
-                    if (closestDist < this.size + closestPrey.size) {
-                        this.energy = Math.min(this.maxEnergy, this.energy + closestPrey.energy * 0.8);
-                        herbivores.splice(herbivores.indexOf(closestPrey), 1);
-                    }
-                } else {
-                    this.applyForce(this.wander());
-                }
-            }
-
-            canReproduce() {
-                return this.energy > this.reproThreshold && this.age > 100 && Math.random() < 0.005;
-            }
-
-            reproduce() {
-                this.energy *= 0.5;
-                const child = new Creature(this.pos.x, this.pos.y, this.species);
-                child.energy = this.energy;
-                // Mutation
-                child.maxSpeed = this.maxSpeed * random(0.9, 1.1);
-                child.perception = this.perception * random(0.9, 1.1);
-                return child;
-            }
-
-            draw() {
-                // Trail
-                if (this.trail.length > 1) {
+            draw(ctx) {
+                ctx.save();
+                ctx.strokeStyle = 'rgba(100, 200, 255, 0.15)';
+                ctx.lineWidth = 1;
+                for (let i = 0; i < this.cells.length; i++) {
+                    const wind = this.cells[i];
+                    if (wind.mag() < 0.01) continue;
+                    const col = i % this.cols;
+                    const row = Math.floor(i / this.cols);
+                    const x = col * this.cellSize + this.cellSize / 2;
+                    const y = row * this.cellSize + this.cellSize / 2;
+                    const len = wind.mag() * 30;
+                    const angle = wind.heading();
                     ctx.beginPath();
-                    ctx.moveTo(this.trail[0].x, this.trail[0].y);
-                    for (let i = 1; i < this.trail.length; i++) {
-                        ctx.lineTo(this.trail[i].x, this.trail[i].y);
-                    }
-                    const color = this.species === 'herbivore' ? '74, 222, 128' : '248, 113, 113';
-                    ctx.strokeStyle = `rgba(${color}, 0.3)`;
-                    ctx.lineWidth = 2;
+                    ctx.moveTo(x, y);
+                    ctx.lineTo(x + Math.cos(angle) * len, y + Math.sin(angle) * len);
                     ctx.stroke();
                 }
-
-                // Body
-                const color = this.species === 'herbivore' ? '#4ade80' : '#f87171';
-                const glowColor = this.species === 'herbivore' ? '#4ade80' : '#f87171';
-                
-                ctx.save();
-                ctx.translate(this.pos.x, this.pos.y);
-                ctx.rotate(Math.atan2(this.vel.y, this.vel.x));
-                
-                // Glow based on energy
-                const energyRatio = this.energy / this.maxEnergy;
-                ctx.shadowBlur = 10 + energyRatio * 10;
-                ctx.shadowColor = glowColor;
-                
-                // Body shape
-                ctx.beginPath();
-                if (this.species === 'herbivore') {
-                    // Circular body for herbivores
-                    ctx.arc(0, 0, this.size * (0.8 + energyRatio * 0.2), 0, Math.PI * 2);
-                } else {
-                    // Triangular body for predators
-                    ctx.moveTo(this.size * 1.5, 0);
-                    ctx.lineTo(-this.size, -this.size * 0.8);
-                    ctx.lineTo(-this.size * 0.5, 0);
-                    ctx.lineTo(-this.size, this.size * 0.8);
-                    ctx.closePath();
-                }
-                
-                ctx.fillStyle = color;
-                ctx.fill();
-                
-                // Inner glow
-                ctx.shadowBlur = 0;
-                ctx.beginPath();
-                ctx.arc(0, 0, this.size * 0.3, 0, Math.PI * 2);
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-                ctx.fill();
-                
                 ctx.restore();
             }
         }
 
-        // Simulation state
-        let foods = [];
-        let herbivores = [];
-        let predators = [];
-        let windParticles = [];
+        // ============================================
+        // CREATURE BASE CLASS
+        // ============================================
 
-        // Initialize simulation
+        class Creature {
+            constructor(x, y, type) {
+                this.x = x;
+                this.y = y;
+                this.type = type;
+                this.vx = random(-1, 1);
+                this.vy = random(-1, 1);
+                this.energy = 50;
+                this.maxEnergy = 100;
+                this.age = 0;
+                this.birthTime = Date.now();
+                this.generation = 1;
+                this.trail = [];
+                this.id = Math.random().toString(36).substr(2, 9);
+                
+                // Perception
+                this.viewRadius = type === 'herbivore' ? CONFIG.VIEW_RADIUS_HERBIVORE : CONFIG.VIEW_RADIUS_PREDATOR;
+                this.maxSpeed = type === 'herbivore' ? CONFIG.MAX_SPEED_HERBIVORE : CONFIG.MAX_SPEED_PREDATOR;
+                
+                // Visual properties
+                this.baseColor = type === 'herbivore' ? '#00ff88' : '#ff4444';
+                this.glowColor = type === 'herbivore' ? 'rgba(0, 255, 136, 0.6)' : 'rgba(255, 68, 68, 0.6)';
+                this.size = type === 'herbivore' ? 8 : 10;
+                this.pulse = random(0, Math.PI * 2);
+            }
+
+            get position() {
+                return new Vector(this.x, this.y);
+            }
+
+            get velocity() {
+                return new Vector(this.vx, this.vy);
+            }
+
+            set velocity(v) {
+                this.vx = v.x;
+                this.vy = v.y;
+            }
+
+            updateTrail() {
+                this.trail.push({ x: this.x, y: this.y });
+                if (this.trail.length > CONFIG.TRAIL_LENGTH) {
+                    this.trail.shift();
+                }
+            }
+
+            applyForce(force) {
+                this.vx += force.x;
+                this.vy += force.y;
+            }
+
+            // Simple neural decision making
+            makeDecision(environment) {
+                const forces = [];
+
+                // 1. Wander behavior (default)
+                const wanderAngle = this.velocity.heading() + random(-0.5, 0.5);
+                const wanderForce = Vector.fromAngle(wanderAngle).mult(0.5);
+                forces.push({ force: wanderForce, weight: 0.3 });
+
+                // 2. Seek food if hungry
+                if (environment.food && this.energy < 60) {
+                    const foodDir = environment.food.sub(this.position).normalize();
+                    const foodForce = foodDir.mult(1.0);
+                    forces.push({ force: foodForce, weight: 0.8 });
+                }
+
+                // 3. Flee from threats
+                if (environment.threats.length > 0) {
+                    let fleeForce = new Vector(0, 0);
+                    for (const threat of environment.threats) {
+                        const away = this.position.sub(threat).normalize();
+                        const dist = distance(this.x, this.y, threat.x, threat.y);
+                        const weight = 1 - (dist / CONFIG.FLEE_RADIUS);
+                        fleeForce = fleeForce.add(away.mult(weight));
+                    }
+                    forces.push({ force: fleeForce.normalize().mult(1.5), weight: 1.0 });
+                }
+
+                // 4. Hunt prey (predators only)
+                if (this.type === 'predator' && environment.prey) {
+                    const preyDir = environment.prey.sub(this.position).normalize();
+                    const huntForce = preyDir.mult(1.2);
+                    forces.push({ force: huntForce, weight: 0.9 });
+                }
+
+                // 5. Avoid boundaries
+                const margin = 50;
+                let boundaryForce = new Vector(0, 0);
+                if (this.x < margin) boundaryForce.x = 1;
+                if (this.x > CONFIG.WORLD_WIDTH - margin) boundaryForce.x = -1;
+                if (this.y < margin) boundaryForce.y = 1;
+                if (this.y > CONFIG.WORLD_HEIGHT - margin) boundaryForce.y = -1;
+                if (boundaryForce.mag() > 0) {
+                    forces.push({ force: boundaryForce.normalize().mult(1.0), weight: 0.7 });
+                }
+
+                // 6. Wind influence
+                if (environment.wind) {
+                    forces.push({ force: environment.wind.mult(0.5), weight: 0.4 });
+                }
+
+                // Combine forces
+                let finalForce = new Vector(0, 0);
+                for (const { force, weight } of forces) {
+                    finalForce = finalForce.add(force.mult(weight));
+                }
+
+                return finalForce.normalize().mult(CONFIG.MAX_FORCE);
+            }
+
+            perceive() {
+                const environment = {
+                    food: null,
+                    threats: [],
+                    prey: null,
+                    wind: windField.getWindAt(this.x, this.y)
+                };
+
+                let closestFood = null;
+                let closestFoodDist = this.viewRadius;
+
+                // Find closest food
+                for (const food of foods) {
+                    const dist = distance(this.x, this.y, food.x, food.y);
+                    if (dist < closestFoodDist) {
+                        closestFoodDist = dist;
+                        closestFood = food;
+                    }
+                }
+                if (closestFood) {
+                    environment.food = new Vector(closestFood.x, closestFood.y);
+                }
+
+                if (this.type === 'herbivore') {
+                    // Herbivores flee from predators
+                    for (const predator of predators) {
+                        const dist = distance(this.x, this.y, predator.x, predator.y);
+                        if (dist < CONFIG.FLEE_RADIUS) {
+                            environment.threats.push(new Vector(predator.x, predator.y));
+                        }
+                    }
+                } else {
+                    // Predators hunt herbivores
+                    let closestPrey = null;
+                    let closestPreyDist = CONFIG.HUNT_RADIUS;
+                    for (const herbivore of herbivores) {
+                        const dist = distance(this.x, this.y, herbivore.x, herbivore.y);
+                        if (dist < closestPreyDist) {
+                            closestPreyDist = dist;
+                            closestPrey = herbivore;
+                        }
+                    }
+                    if (closestPrey) {
+                        environment.prey = new Vector(closestPrey.x, closestPrey.y);
+                    }
+                }
+
+                return environment;
+            }
+
+            update() {
+                // Energy decay
+                const decay = this.type === 'herbivore' ? CONFIG.ENERGY_DECAY_HERBIVORE : CONFIG.ENERGY_DECAY_PREDATOR;
+                this.energy -= decay;
+                this.age++;
+                this.pulse += 0.1;
+
+                // Neural decision making
+                const environment = this.perceive();
+                const decisionForce = this.makeDecision(environment);
+                this.applyForce(decisionForce);
+
+                // Apply velocity limit
+                const vel = this.velocity.limit(this.maxSpeed);
+                this.velocity = vel;
+
+                // Update position
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Wrap around edges (soft boundary)
+                if (this.x < -10) this.x = CONFIG.WORLD_WIDTH + 10;
+                if (this.x > CONFIG.WORLD_WIDTH + 10) this.x = -10;
+                if (this.y < -10) this.y = CONFIG.WORLD_HEIGHT + 10;
+                if (this.y > CONFIG.WORLD_HEIGHT + 10) this.y = -10;
+
+                // Update trail
+                this.updateTrail();
+
+                // Size based on energy
+                this.currentSize = this.size * (0.6 + (this.energy / this.maxEnergy) * 0.4);
+            }
+
+            draw(ctx) {
+                // Draw trail
+                if (this.trail.length > 1) {
+                    ctx.save();
+                    ctx.lineCap = 'round';
+                    for (let i = 1; i < this.trail.length; i++) {
+                        const alpha = (i / this.trail.length) * 0.3;
+                        ctx.strokeStyle = this.type === 'herbivore' 
+                            ? `rgba(0, 255, 136, ${alpha})` 
+                            : `rgba(255, 68, 68, ${alpha})`;
+                        ctx.lineWidth = this.currentSize * (i / this.trail.length);
+                        ctx.beginPath();
+                        ctx.moveTo(this.trail[i - 1].x, this.trail[i - 1].y);
+                        ctx.lineTo(this.trail[i].x, this.trail[i].y);
+                        ctx.stroke();
+                    }
+                    ctx.restore();
+                }
+
+                // Draw glow
+                const pulseSize = this.currentSize + Math.sin(this.pulse) * 1;
+                ctx.save();
+                ctx.shadowColor = this.baseColor;
+                ctx.shadowBlur = 20;
+                ctx.fillStyle = this.baseColor;
+                ctx.beginPath();
+                
+                if (this.type === 'herbivore') {
+                    // Circle for herbivores
+                    ctx.arc(this.x, this.y, pulseSize, 0, Math.PI * 2);
+                } else {
+                    // Triangle for predators
+                    const angle = this.velocity.heading();
+                    ctx.translate(this.x, this.y);
+                    ctx.rotate(angle);
+                    ctx.moveTo(pulseSize * 1.5, 0);
+                    ctx.lineTo(-pulseSize, -pulseSize * 0.8);
+                    ctx.lineTo(-pulseSize, pulseSize * 0.8);
+                    ctx.closePath();
+                }
+                ctx.fill();
+                ctx.restore();
+
+                // Inner core
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, pulseSize * 0.3, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Energy indicator (subtle ring)
+                const energyRatio = this.energy / this.maxEnergy;
+                ctx.save();
+                ctx.strokeStyle = energyRatio > 0.5 ? 'rgba(0, 255, 136, 0.3)' : 'rgba(255, 100, 100, 0.5)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, pulseSize + 4, 0, Math.PI * 2 * energyRatio);
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            canReproduce() {
+                return this.energy > CONFIG.REPRODUCTION_THRESHOLD && this.age > 100;
+            }
+
+            reproduce() {
+                this.energy -= CONFIG.REPRODUCTION_COST;
+                const offspring = this.type === 'herbivore' 
+                    ? new Herbivore(this.x + random(-20, 20), this.y + random(-20, 20))
+                    : new Predator(this.x + random(-20, 20), this.y + random(-20, 20));
+                offspring.generation = this.generation + 1;
+                offspring.energy = 40;
+                return offspring;
+            }
+
+            isDead() {
+                return this.energy <= 0;
+            }
+
+            getAgeInSeconds() {
+                return Math.floor((Date.now() - this.birthTime) / 1000);
+            }
+        }
+
+        class Herbivore extends Creature {
+            constructor(x, y) {
+                super(x, y, 'herbivore');
+            }
+
+            checkCollisions() {
+                // Eat food
+                for (let i = foods.length - 1; i >= 0; i--) {
+                    const food = foods[i];
+                    const dist = distance(this.x, this.y, food.x, food.y);
+                    if (dist < this.currentSize + food.size + 5) {
+                        this.energy = Math.min(this.maxEnergy, this.energy + food.energy);
+                        spawnParticles(food.x, food.y, food.color, 5);
+                        foods.splice(i, 1);
+                    }
+                }
+            }
+        }
+
+        class Predator extends Creature {
+            constructor(x, y) {
+                super(x, y, 'predator');
+            }
+
+            checkCollisions() {
+                // Hunt herbivores
+                for (let i = herbivores.length - 1; i >= 0; i--) {
+                    const prey = herbivores[i];
+                    const dist = distance(this.x, this.y, prey.x, prey.y);
+                    if (dist < this.currentSize + prey.currentSize + 5) {
+                        this.energy = Math.min(this.maxEnergy, this.energy + 40);
+                        spawnParticles(prey.x, prey.y, '#00ff88', 12, 4);
+                        herbivores.splice(i, 1);
+                    }
+                }
+            }
+        }
+
+        // ============================================
+        // SIMULATION MANAGEMENT
+        // ============================================
+
+        windField = new WindField();
+
         function initSimulation() {
-            foods = [];
             herbivores = [];
             predators = [];
-            windParticles = [];
-            generation = 0;
-            
-            // Initial food
-            for (let i = 0; i < 30; i++) {
-                foods.push(new Food(random(50, width - 50), random(50, height - 50)));
+            foods = [];
+            particles = [];
+            generation = 1;
+            oldestCreatureAge = 0;
+
+            // Create initial herbivores
+            for (let i = 0; i < CONFIG.INITIAL_HERBIVORES; i++) {
+                herbivores.push(new Herbivore(
+                    random(50, CONFIG.WORLD_WIDTH - 50),
+                    random(50, CONFIG.WORLD_HEIGHT - 50)
+                ));
             }
-            
-            // Initial creatures
-            addHerbivores(15);
-            addPredators(3);
+
+            // Create initial predators
+            for (let i = 0; i < CONFIG.INITIAL_PREDATORS; i++) {
+                predators.push(new Predator(
+                    random(50, CONFIG.WORLD_WIDTH - 50),
+                    random(50, CONFIG.WORLD_HEIGHT - 50)
+                ));
+            }
+
+            // Create initial food
+            for (let i = 0; i < CONFIG.INITIAL_FOOD; i++) {
+                spawnRandomFood();
+            }
+
+            windField.init();
         }
 
-        function addHerbivores(count) {
-            for (let i = 0; i < count; i++) {
-                herbivores.push(new Creature(random(50, width - 50), random(50, height - 50), 'herbivore'));
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            CONFIG.WORLD_WIDTH = canvas.width;
+            CONFIG.WORLD_HEIGHT = canvas.height;
+            if (windField.cells.length === 0) {
+                windField.init();
             }
         }
 
-        function addPredators(count) {
-            for (let i = 0; i < count; i++) {
-                predators.push(new Creature(random(50, width - 50), random(50, height - 50), 'predator'));
-            }
-        }
-
-        function resetSimulation() {
-            initSimulation();
-        }
-
-        function togglePause() {
-            isPaused = !isPaused;
-        }
-
-        // Mouse interaction
-        let isDragging = false;
-        let lastMousePos = null;
-
-        canvas.addEventListener('mousedown', (e) => {
-            isDragging = true;
-            lastMousePos = new Vector(e.clientX, e.clientY);
-            // Spawn food on click
-            foods.push(new Food(e.clientX, e.clientY, random(2, 5)));
-        });
-
-        canvas.addEventListener('mousemove', (e) => {
-            if (isDragging && lastMousePos) {
-                const currentPos = new Vector(e.clientX, e.clientY);
-                const windForce = Vector.sub(currentPos, lastMousePos).mult(0.1);
-                
-                // Apply wind to nearby creatures
-                for (const creature of [...herbivores, ...predators]) {
-                    const d = dist(e.clientX, e.clientY, creature.pos.x, creature.pos.y);
-                    if (d < 100) {
-                        creature.applyForce(windForce.copy().mult(2));
-                    }
-                }
-                
-                // Visual wind particles
-                windParticles.push({
-                    pos: currentPos.copy(),
-                    vel: windForce.copy().mult(5),
-                    life: 30
-                });
-                
-                lastMousePos = currentPos;
-            }
-        });
-
-        canvas.addEventListener('mouseup', () => {
-            isDragging = false;
-            lastMousePos = null;
-        });
-
-        // Touch support
-        canvas.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            const touch = e.touches[0];
-            foods.push(new Food(touch.clientX, touch.clientY, random(2, 5)));
-        });
-
-        // Update stats
         function updateStats() {
-            document.getElementById('herbivoreCount').textContent = herbivores.length;
-            document.getElementById('predatorCount').textContent = predators.length;
-            document.getElementById('foodCount').textContent = foods.length;
-            document.getElementById('generationCount').textContent = generation;
+            document.getElementById('herbivore-count').textContent = herbivores.length;
+            document.getElementById('predator-count').textContent = predators.length;
+            document.getElementById('food-count').textContent = foods.length;
+            document.getElementById('generation-count').textContent = generation;
+
+            // Find oldest creature
+            let oldest = 0;
+            const allCreatures = [...herbivores, ...predators];
+            for (const creature of allCreatures) {
+                const age = creature.getAgeInSeconds();
+                if (age > oldest) oldest = age;
+            }
+            oldestCreatureAge = oldest;
+            document.getElementById('oldest-creature').textContent = oldest + 's';
         }
 
-        // Main loop
-        function loop() {
-            if (!isPaused) {
-                // Clear with fade effect
-                ctx.fillStyle = 'rgba(10, 10, 15, 0.15)';
-                ctx.fillRect(0, 0, width, height);
+        function updateSimulation() {
+            if (isPaused) return;
 
-                // Spawn food over time
-                if (frameCount % 60 === 0 && foods.length < 50) {
-                    foods.push(new Food(random(20, width - 20), random(20, height - 20)));
-                }
+            // Spawn food over time
+            if (Math.random() < CONFIG.FOOD_SPAWN_RATE) {
+                spawnRandomFood();
+            }
 
-                // Update and draw food
-                for (let i = foods.length - 1; i >= 0; i--) {
-                    foods[i].update();
-                    foods[i].draw();
-                }
+            // Update wind field
+            windField.update();
 
-                // Update and draw herbivores
-                for (let i = herbivores.length - 1; i >= 0; i--) {
-                    const h = herbivores[i];
-                    if (!h.update(foods, herbivores, predators)) {
-                        herbivores.splice(i, 1);
-                    } else {
-                        if (h.canReproduce()) {
-                            const child = h.reproduce();
-                            herbivores.push(child);
-                            generation++;
-                        }
-                        h.draw();
-                    }
-                }
+            // Update food
+            for (const food of foods) {
+                food.update();
+            }
 
-                // Update and draw predators
-                for (let i = predators.length - 1; i >= 0; i--) {
-                    const p = predators[i];
-                    if (!p.update(foods, herbivores, predators)) {
-                        predators.splice(i, 1);
-                    } else {
-                        if (p.canReproduce()) {
-                            const child = p.reproduce();
-                            predators.push(child);
-                            generation++;
-                        }
-                        p.draw();
-                    }
-                }
+            // Update herbivores
+            for (let i = herbivores.length - 1; i >= 0; i--) {
+                const h = herbivores[i];
+                h.update();
+                h.checkCollisions();
 
-                // Draw wind particles
-                for (let i = windParticles.length - 1; i >= 0; i--) {
-                    const p = windParticles[i];
-                    p.pos.add(p.vel);
-                    p.life--;
-                    
-                    ctx.beginPath();
-                    ctx.arc(p.pos.x, p.pos.y, p.life / 10, 0, Math.PI * 2);
-                    ctx.fillStyle = `rgba(100, 200, 255, ${p.life / 60})`;
-                    ctx.fill();
-                    
-                    if (p.life <= 0) windParticles.splice(i, 1);
+                if (h.isDead()) {
+                    spawnParticles(h.x, h.y, '#00ff88', 10);
+                    herbivores.splice(i, 1);
+                } else if (h.canReproduce() && Math.random() < 0.005 && herbivores.length < 50) {
+                    herbivores.push(h.reproduce());
                 }
+            }
 
-                // Emergency spawn if ecosystem collapses
-                if (herbivores.length === 0 && frameCount % 300 === 0) {
-                    addHerbivores(5);
-                }
-                if (predators.length === 0 && herbivores.length > 10 && frameCount % 300 === 0) {
-                    addPredators(2);
-                }
+            // Update predators
+            for (let i = predators.length - 1; i >= 0; i--) {
+                const p = predators[i];
+                p.update();
+                p.checkCollisions();
 
-                frameCount++;
+                if (p.isDead()) {
+                    spawnParticles(p.x, p.y, '#ff4444', 10);
+                    predators.splice(i, 1);
+                } else if (p.canReproduce() && Math.random() < 0.003 && predators.length < 15) {
+                    predators.push(p.reproduce());
+                }
+            }
+
+            // Update particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                if (!particles[i].update()) {
+                    particles.splice(i, 1);
+                }
+            }
+
+            // Ecosystem regeneration if too few creatures
+            if (herbivores.length < 3 && Math.random() < 0.02) {
+                herbivores.push(new Herbivore(
+                    random(50, CONFIG.WORLD_WIDTH - 50),
+                    random(50, CONFIG.WORLD_HEIGHT - 50)
+                ));
+                generation++;
+            }
+
+            if (predators.length === 0 && herbivores.length > 5 && Math.random() < 0.01) {
+                predators.push(new Predator(
+                    random(50, CONFIG.WORLD_WIDTH - 50),
+                    random(50, CONFIG.WORLD_HEIGHT - 50)
+                ));
             }
 
             updateStats();
+        }
+
+        function draw() {
+            // Clear with trail effect
+            ctx.fillStyle = 'rgba(10, 10, 15, 0.3)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw wind field (subtle)
+            windField.draw(ctx);
+
+            // Draw food
+            for (const food of foods) {
+                food.draw(ctx);
+            }
+
+            // Draw herbivores
+            for (const h of herbivores) {
+                h.draw(ctx);
+            }
+
+            // Draw predators
+            for (const p of predators) {
+                p.draw(ctx);
+            }
+
+            // Draw particles
+            for (const p of particles) {
+                p.draw(ctx);
+            }
+        }
+
+        function loop() {
+            updateSimulation();
+            draw();
+            frameCount++;
             requestAnimationFrame(loop);
         }
 
-        // Start
+        // ============================================
+        // INPUT HANDLING
+        // ============================================
+
+        canvas.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            dragStartX = e.clientX;
+            dragStartY = e.clientY;
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+
+            if (isDragging) {
+                const dx = e.clientX - dragStartX;
+                const dy = e.clientY - dragStartY;
+                if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+                    windField.addWind(e.clientX, e.clientY, dx * 0.1, dy * 0.1, 80);
+                }
+                dragStartX = e.clientX;
+                dragStartY = e.clientY;
+            }
+        });
+
+        canvas.addEventListener('mouseup', (e) => {
+            if (isDragging) {
+                const dx = e.clientX - dragStartX;
+                const dy = e.clientY - dragStartY;
+                const dist = Math.hypot(dx, dy);
+                
+                // If it was a short drag, spawn food (click)
+                if (dist < 10) {
+                    spawnFood(e.clientX, e.clientY);
+                    spawnParticles(e.clientX, e.clientY, '#ffaa00', 6, 2);
+                }
+            }
+            isDragging = false;
+        });
+
+        canvas.addEventListener('touchstart', (e) => {
+            const touch = e.touches[0];
+            isDragging = true;
+            dragStartX = touch.clientX;
+            dragStartY = touch.clientY;
+            mouseX = touch.clientX;
+            mouseY = touch.clientY;
+        }, { passive: true });
+
+        canvas.addEventListener('touchmove', (e) => {
+            const touch = e.touches[0];
+            mouseX = touch.clientX;
+            mouseY = touch.clientY;
+
+            if (isDragging) {
+                const dx = touch.clientX - dragStartX;
+                const dy = touch.clientY - dragStartY;
+                if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+                    windField.addWind(touch.clientX, touch.clientY, dx * 0.1, dy * 0.1, 80);
+                }
+                dragStartX = touch.clientX;
+                dragStartY = touch.clientY;
+            }
+        }, { passive: true });
+
+        canvas.addEventListener('touchend', (e) => {
+            if (isDragging) {
+                const dx = mouseX - dragStartX;
+                const dy = mouseY - dragStartY;
+                const dist = Math.hypot(dx, dy);
+                
+                if (dist < 10) {
+                    spawnFood(mouseX, mouseY);
+                }
+            }
+            isDragging = false;
+        });
+
+        // Button handlers
+        document.getElementById('btn-pause').addEventListener('click', () => {
+            isPaused = !isPaused;
+            document.getElementById('btn-pause').textContent = isPaused ? 'Resume' : 'Pause';
+        });
+
+        document.getElementById('btn-reset').addEventListener('click', () => {
+            initSimulation();
+        });
+
+        document.getElementById('btn-herbivore').addEventListener('click', () => {
+            herbivores.push(new Herbivore(
+                random(50, CONFIG.WORLD_WIDTH - 50),
+                random(50, CONFIG.WORLD_HEIGHT - 50)
+            ));
+        });
+
+        document.getElementById('btn-predator').addEventListener('click', () => {
+            predators.push(new Predator(
+                random(50, CONFIG.WORLD_WIDTH - 50),
+                random(50, CONFIG.WORLD_HEIGHT - 50)
+            ));
+        });
+
+        // Hide help tooltip after 10 seconds
+        setTimeout(() => {
+            document.getElementById('help-tooltip').classList.remove('visible');
+        }, 10000);
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
         initSimulation();
         loop();
+
+        console.log('🌿 Lumina Ecosystem initialized');
+        console.log('Creatures: ' + (CONFIG.INITIAL_HERBIVORES + CONFIG.INITIAL_PREDATORS));
+        console.log('Food sources: ' + CONFIG.INITIAL_FOOD);
     </script>
 </body>
 </html>
