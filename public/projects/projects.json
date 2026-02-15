@@ -1,5 +1,12 @@
 [
   {
+    "title": "Digital Ecosystem",
+    "desc": "Interactive predator-prey ecosystem simulation with autonomous agents that evolve, reproduce, and form emergent behaviors. Features neural decision-making, energy systems, and real-time interaction.",
+    "url": "/projects/2026-02-15-digital-ecosystem.html",
+    "date": "2026-02-15",
+    "type": "Simulation"
+  },
+  {
     "title": "Neural Constellation",
     "desc": "Emergent particle simulation with flocking behavior, neural connections, and four interactive modes. Features spatial hashing, Simplex noise drift, and dynamic force fields.",
     "url": "/projects/neural-constellation/",
