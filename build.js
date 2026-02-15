@@ -1,11 +1,14 @@
-// Build script to generate static index from projects/ and blog/
+// Build script to regenerate projects.json and posts.json
 // Run: node build.js
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 function getProjects() {
-    const projectsDir = path.join(__dirname, 'projects');
+    const projectsDir = path.join(__dirname, 'src', 'projects');
     if (!fs.existsSync(projectsDir)) return [];
     
     return fs.readdirSync(projectsDir)
@@ -14,47 +17,50 @@ function getProjects() {
             const content = fs.readFileSync(path.join(projectsDir, f), 'utf8');
             const titleMatch = content.match(/<title>(.+?)<\/title>/);
             const descMatch = content.match(/<meta name="description" content="(.+?)"/);
+            const dateStr = f.split('-').slice(0, 3).join('-');
             return {
-                title: titleMatch ? titleMatch[1] : f,
+                title: titleMatch ? titleMatch[1].split(' — ')[0] : f,
                 desc: descMatch ? descMatch[1] : '',
-                url: `projects/${f}`,
-                date: f.split('-').slice(0, 3).join('-'),
+                url: `/src/projects/${f}`,
+                date: dateStr,
                 type: 'Project'
             };
         })
-        .reverse();
+        .sort((a, b) => new Date(b.date) - new Date(a.date));
 }
 
 function getPosts() {
-    const blogDir = path.join(__dirname, 'blog');
+    const blogDir = path.join(__dirname, 'src', 'blog');
     if (!fs.existsSync(blogDir)) return [];
     
     return fs.readdirSync(blogDir)
-        .filter(f => f.endsWith('.html') || f.endsWith('.md'))
+        .filter(f => f.endsWith('.html'))
         .map(f => {
             const content = fs.readFileSync(path.join(blogDir, f), 'utf8');
-            const titleMatch = content.match(/<title>(.+?)<\/title>/) || 
-                              content.match(/^# (.+)$/m);
+            const titleMatch = content.match(/<title>(.+?)<\/title>/);
+            const dateStr = f.split('-').slice(0, 3).join('-');
             return {
-                title: titleMatch ? titleMatch[1] : f,
-                url: `blog/${f}`,
-                date: f.split('-').slice(0, 3).join('-')
+                title: titleMatch ? titleMatch[1].split(' — ')[0] : f,
+                url: `/src/blog/${f}`,
+                date: dateStr
             };
         })
-        .reverse();
+        .sort((a, b) => new Date(b.date) - new Date(a.date));
 }
 
-// Generate static data file
-const data = {
-    projects: getProjects(),
-    posts: getPosts(),
-    lastBuild: new Date().toISOString()
-};
+// Generate JSON files
+const projects = getProjects();
+const posts = getPosts();
 
-fs.mkdirSync(path.join(__dirname, 'assets'), { recursive: true });
 fs.writeFileSync(
-    path.join(__dirname, 'assets', 'data.json'),
-    JSON.stringify(data, null, 2)
+    path.join(__dirname, 'src', 'projects', 'projects.json'),
+    JSON.stringify(projects, null, 2)
 );
 
-console.log(`Built: ${data.projects.length} projects, ${data.posts.length} posts`);
+fs.writeFileSync(
+    path.join(__dirname, 'src', 'blog', 'posts.json'),
+    JSON.stringify(posts, null, 2)
+);
+
+console.log(`Built: ${projects.length} projects, ${posts.length} posts`);
+console.log(`Last build: ${new Date().toISOString()}`);
