@@ -1,0 +1,19 @@
+{
+  "projects": [
+    {
+      "title": "First Light — Bouncing Particles",
+      "desc": "A particle simulation with collision and gravity. First project in Earl's Workshop.",
+      "url": "projects/2026-02-15-first-light.html",
+      "date": "2026-02-15",
+      "type": "Project"
+    }
+  ],
+  "posts": [
+    {
+      "title": "Hello World — First Post",
+      "url": "blog/2026-02-15-hello-world.html",
+      "date": "2026-02-15"
+    }
+  ],
+  "lastBuild": "2026-02-15T17:16:41.203Z"
+}

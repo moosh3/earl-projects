@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>First Light — Bouncing Particles</title>
+    <meta name="description" content="A particle simulation with collision and gravity. First project in Earl's Workshop.">
+    <style>
+        body {
+            margin: 0;
+            background: #0a0a0f;
+            overflow: hidden;
+            font-family: monospace;
+        }
+        canvas {
+            display: block;
+        }
+        .info {
+            position: fixed;
+            bottom: 1rem;
+            left: 1rem;
+            color: #888;
+            font-size: 0.85rem;
+            pointer-events: none;
+        }
+        .back {
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            color: #4ecdc4;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        .back:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <a href="../index.html" class="back">← Back</a>
+    <div class="info">Click to spawn • Drag to throw</div>
+    <canvas id="canvas"></canvas>
+    
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resize();
+        window.addEventListener('resize', resize);
+        
+        const particles = [];
+        const colors = ['#ff6b35', '#4ecdc4', '#ffe66d', '#95e1d3', '#f38181'];
+        
+        class Particle {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 10;
+                this.vy = (Math.random() - 0.5) * 10;
+                this.radius = 5 + Math.random() * 10;
+                this.color = colors[Math.floor(Math.random() * colors.length)];
+                this.gravity = 0.2;
+                this.friction = 0.99;
+            }
+            
+            update() {
+                this.vy += this.gravity;
+                this.vx *= this.friction;
+                this.vy *= this.friction;
+                
+                this.x += this.vx;
+                this.y += this.vy;
+                
+                // Bounce off walls
+                if (this.x - this.radius < 0 || this.x + this.radius > canvas.width) {
+                    this.vx *= -0.9;
+                    this.x = Math.max(this.radius, Math.min(canvas.width - this.radius, this.x));
+                }
+                if (this.y - this.radius < 0 || this.y + this.radius > canvas.height) {
+                    this.vy *= -0.9;
+                    this.y = Math.max(this.radius, Math.min(canvas.height - this.radius, this.y));
+                }
+            }
+            
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                
+                // Glow
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius * 2, 0, Math.PI * 2);
+                ctx.fillStyle = this.color + '20';
+                ctx.fill();
+            }
+        }
+        
+        // Spawn initial particles
+        for (let i = 0; i < 20; i++) {
+            particles.push(new Particle(
+                canvas.width / 2 + (Math.random() - 0.5) * 100,
+                canvas.height / 3 + (Math.random() - 0.5) * 100
+            ));
+        }
+        
+        let mouseX = 0, mouseY = 0;
+        let isDragging = false;
+        
+        canvas.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+        
+        canvas.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                const vx = (e.clientX - mouseX) * 0.1;
+                const vy = (e.clientY - mouseY) * 0.1;
+                particles.forEach(p => {
+                    const dx = p.x - e.clientX;
+                    const dy = p.y - e.clientY;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < 100) {
+                        p.vx += vx * (100 - dist) / 100;
+                        p.vy += vy * (100 - dist) / 100;
+                    }
+                });
+            }
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+        
+        canvas.addEventListener('mouseup', () => isDragging = false);
+        
+        canvas.addEventListener('click', (e) => {
+            if (!isDragging) {
+                for (let i = 0; i < 5; i++) {
+                    particles.push(new Particle(e.clientX, e.clientY));
+                }
+                if (particles.length > 100) {
+                    particles.splice(0, 5);
+                }
+            }
+        });
+        
+        function animate() {
+            ctx.fillStyle = '#0a0a0f80';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            
+            requestAnimationFrame(animate);
+        }
+        
+        animate();
+    </script>
+</body>
+</html>
