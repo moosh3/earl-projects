@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lenia — Living Cellular Automata</title>
+    <meta name="description" content="Continuous cellular automaton generating organic, life-like patterns through convolution-based growth dynamics.">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #050508;
+            color: #fff;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        #canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            image-rendering: pixelated;
+        }
+
+        .title-overlay {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        .title-overlay h1 {
+            font-size: 1.8rem;
+            font-weight: 300;
+            letter-spacing: 0.4em;
+            text-transform: uppercase;
+            background: linear-gradient(90deg, #ff6b9d, #c44569, #ff6b9d);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: shimmer 4s linear infinite;
+        }
+
+        .title-overlay .subtitle {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 0.15em;
+            margin-top: 5px;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 0% center; }
+            100% { background-position: 200% center; }
+        }
+
+        .controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 100;
+            background: rgba(10, 10, 15, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 12px 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 90vw;
+        }
+
+        .btn {
+            background: linear-gradient(145deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-1px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn.active {
+            background: linear-gradient(145deg, #ff6b9d, #c44569);
+            border-color: transparent;
+        }
+
+        .info-panel {
+            position: fixed;
+            top: 80px;
+            left: 20px;
+            background: rgba(10, 10, 15, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 16px 20px;
+            z-index: 100;
+            min-width: 200px;
+        }
+
+        .info-panel h3 {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 6px 0;
+            font-size: 0.8rem;
+        }
+
+        .stat-label { color: rgba(255, 255, 255, 0.5); }
+        .stat-value { font-weight: 500; font-variant-numeric: tabular-nums; }
+
+        .back {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            color: #ff6b9d;
+            text-decoration: none;
+            font-size: 0.85rem;
+            z-index: 101;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .back:hover { opacity: 1; }
+
+        .brush-indicator {
+            position: fixed;
+            pointer-events: none;
+            border: 2px solid rgba(255, 107, 157, 0.5);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 99;
+            display: none;
+        }
+
+        .help-text {
+            position: fixed;
+            bottom: 90px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.75rem;
+            z-index: 100;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <a href="/" class="back">← Back</a>
+    
+    <div class="title-overlay">
+        <h1>Lenia</h1>
+        <div class="subtitle">Continuous Cellular Automaton</div>
+    </div>
+
+    <div class="info-panel">
+        <h3>Statistics</h3>
+        <div class="stat-row">
+            <span class="stat-label">FPS</span>
+            <span class="stat-value" id="fps">60</span>
+        </div>
+        <div class="stat-row">
+            <span class="stat-label">Active Cells</span>
+            <span class="stat-value" id="active">0</span>
+        </div>
+        <div class="stat-row">
+            <span class="stat-label">Total Mass</span>
+            <span class="stat-value" id="mass">0.0</span>
+        </div>
+        <div class="stat-row">
+            <span class="stat-label">Growth Rate</span>
+            <span class="stat-value" id="growth">0.00</span>
+        </div>
+    </div>
+
+    <div class="help-text">Click & drag to seed life • Scroll to resize brush</div>
+
+    <div class="controls">
+        <button class="btn" id="btn-preset-orbium">Orbium</button>
+        <button class="btn" id="btn-preset-geminium">Geminium</button>
+        <button class="btn" id="btn-preset-pulsium">Pulsium</button>
+        <button class="btn" id="btn-clear">Clear</button>
+        <button class="btn" id="btn-pause">Pause</button>
+        <button class="btn" id="btn-random">Random Seed</button>
+    </div>
+
+    <div class="brush-indicator" id="brush"></div>
+    <canvas id="canvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const brush = document.getElementById('brush');
+        
+        // Simulation parameters
+        const GRID_SIZE = 256;
+        const DT = 0.1;
+        const KERNEL_RADIUS = 13;
+        
+        let grid = new Float32Array(GRID_SIZE * GRID_SIZE);
+        let nextGrid = new Float32Array(GRID_SIZE * GRID_SIZE);
+        let kernel = new Float32Array((KERNEL_RADIUS * 2 + 1) ** 2);
+        
+        let isPaused = false;
+        let mouseX = 0, mouseY = 0;
+        let isDrawing = false;
+        let brushSize = 8;
+        let frameCount = 0;
+        let lastTime = performance.now();
+        let fps = 60;
+        
+        // Lenia parameters (configurable per species)
+        let params = {
+            mu: 0.15,      // growth center
+            sigma: 0.015,  // growth width
+            dt: 0.1        // time step
+        };
+
+        // Resize canvas
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resize();
+        window.addEventListener('resize', resize);
+
+        // Initialize smooth ring kernel (bell-shaped in radial distance)
+        function initKernel() {
+            const size = KERNEL_RADIUS * 2 + 1;
+            let sum = 0;
+            for (let y = 0; y < size; y++) {
+                for (let x = 0; x < size; x++) {
+                    const dx = x - KERNEL_RADIUS;
+                    const dy = y - KERNEL_RADIUS;
+                    const r = Math.sqrt(dx * dx + dy * dy) / KERNEL_RADIUS;
+                    // Smooth ring: peaked at r=0.5, zero at r=0 and r=1
+                    let value = 0;
+                    if (r < 1) {
+                        value = Math.exp(-((r - 0.5) ** 2) / 0.15);
+                    }
+                    kernel[y * size + x] = value;
+                    sum += value;
+                }
+            }
+            // Normalize
+            for (let i = 0; i < kernel.length; i++) {
+                kernel[i] /= sum;
+            }
+        }
+
+        // Growth function (bell curve centered at mu)
+        function growth(U) {
+            return Math.exp(-((U - params.mu) ** 2) / (2 * params.sigma ** 2)) * 2 - 1;
+        }
+
+        // Convolution with kernel
+        function convolve(x, y) {
+            let sum = 0;
+            const ksize = KERNEL_RADIUS * 2 + 1;
+            for (let ky = 0; ky < ksize; ky++) {
+                for (let kx = 0; kx < ksize; kx++) {
+                    const gx = (x + kx - KERNEL_RADIUS + GRID_SIZE) % GRID_SIZE;
+                    const gy = (y + ky - KERNEL_RADIUS + GRID_SIZE) % GRID_SIZE;
+                    sum += grid[gy * GRID_SIZE + gx] * kernel[ky * ksize + kx];
+                }
+            }
+            return sum;
+        }
+
+        // Update simulation
+        function update() {
+            if (isPaused) return;
+            
+            let activeCount = 0;
+            let totalMass = 0;
+            let totalGrowth = 0;
+
+            for (let y = 0; y < GRID_SIZE; y++) {
+                for (let x = 0; x < GRID_SIZE; x++) {
+                    const idx = y * GRID_SIZE + x;
+                    const U = convolve(x, y);
+                    const g = growth(U);
+                    let newVal = grid[idx] + params.dt * g;
+                    newVal = Math.max(0, Math.min(1, newVal));
+                    nextGrid[idx] = newVal;
+                    
+                    if (newVal > 0.01) activeCount++;
+                    totalMass += newVal;
+                    totalGrowth += Math.abs(g);
+                }
+            }
+
+            // Swap grids
+            [grid, nextGrid] = [nextGrid, grid];
+            
+            // Update stats
+            if (frameCount % 10 === 0) {
+                document.getElementById('active').textContent = activeCount.toLocaleString();
+                document.getElementById('mass').textContent = (totalMass / 1000).toFixed(1) + 'k';
+                document.getElementById('growth').textContent = (totalGrowth / GRID_SIZE / GRID_SIZE).toFixed(3);
+            }
+        }
+
+        // Render to canvas
+        function render() {
+            const imageData = ctx.createImageData(GRID_SIZE, GRID_SIZE);
+            const data = imageData.data;
+            
+            for (let i = 0; i < grid.length; i++) {
+                const val = grid[i];
+                const idx = i * 4;
+                
+                // Color mapping: black -> pink -> white
+                if (val < 0.5) {
+                    const t = val * 2;
+                    data[idx] = 255 * t * 0.42;     // R
+                    data[idx + 1] = 255 * t * 0.07; // G
+                    data[idx + 2] = 255 * t * 0.38; // B
+                } else {
+                    const t = (val - 0.5) * 2;
+                    data[idx] = 107 + (255 - 107) * t;
+                    data[idx + 1] = 20 + (255 - 20) * t;
+                    data[idx + 2] = 157 + (255 - 157) * t;
+                }
+                data[idx + 3] = val > 0.01 ? 255 : 0; // Alpha
+            }
+            
+            // Create temporary canvas for scaling
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = GRID_SIZE;
+            tempCanvas.height = GRID_SIZE;
+            tempCanvas.getContext('2d').putImageData(imageData, 0, 0);
+            
+            // Draw scaled to main canvas
+            ctx.fillStyle = '#050508';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            const scale = Math.min(canvas.width, canvas.height) / GRID_SIZE;
+            const offsetX = (canvas.width - GRID_SIZE * scale) / 2;
+            const offsetY = (canvas.height - GRID_SIZE * scale) / 2;
+            
+            ctx.drawImage(tempCanvas, offsetX, offsetY, GRID_SIZE * scale, GRID_SIZE * scale);
+        }
+
+        // Animation loop
+        function loop() {
+            const now = performance.now();
+            const delta = now - lastTime;
+            
+            if (delta >= 16) { // Cap at ~60fps
+                update();
+                render();
+                lastTime = now;
+                frameCount++;
+                
+                if (frameCount % 30 === 0) {
+                    fps = Math.round(1000 / delta);
+                    document.getElementById('fps').textContent = fps;
+                }
+            }
+            
+            requestAnimationFrame(loop);
+        }
+
+        // Convert screen to grid coordinates
+        function screenToGrid(sx, sy) {
+            const scale = Math.min(canvas.width, canvas.height) / GRID_SIZE;
+            const offsetX = (canvas.width - GRID_SIZE * scale) / 2;
+            const offsetY = (canvas.height - GRID_SIZE * scale) / 2;
+            return {
+                x: Math.floor((sx - offsetX) / scale),
+                y: Math.floor((sy - offsetY) / scale)
+            };
+        }
+
+        // Paint on grid
+        function paint(gx, gy) {
+            for (let dy = -brushSize; dy <= brushSize; dy++) {
+                for (let dx = -brushSize; dx <= brushSize; dx++) {
+                    const x = (gx + dx + GRID_SIZE) % GRID_SIZE;
+                    const y = (gy + dy + GRID_SIZE) % GRID_SIZE;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist <= brushSize) {
+                        const idx = y * GRID_SIZE + x;
+                        grid[idx] = Math.min(1, grid[idx] + 0.5 * (1 - dist / brushSize));
+                    }
+                }
+            }
+        }
+
+        // Preset seeds
+        function seedOrbium() {
+            clearGrid();
+            const cx = Math.floor(GRID_SIZE / 2);
+            const cy = Math.floor(GRID_SIZE / 2);
+            // Classic Orbium pattern
+            const pattern = [
+                {x: 0, y: 0, r: 6},
+                {x: 8, y: 0, r: 4},
+                {x: -6, y: 4, r: 3},
+                {x: -6, y: -4, r: 3}
+            ];
+            pattern.forEach(p => {
+                for (let dy = -p.r; dy <= p.r; dy++) {
+                    for (let dx = -p.r; dx <= p.r; dx++) {
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist <= p.r) {
+                            const x = (cx + p.x + dx + GRID_SIZE) % GRID_SIZE;
+                            const y = (cy + p.y + dy + GRID_SIZE) % GRID_SIZE;
+                            grid[y * GRID_SIZE + x] = 1 - dist / p.r;
+                        }
+                    }
+                }
+            });
+            params = { mu: 0.15, sigma: 0.015, dt: 0.1 };
+        }
+
+        function seedGeminium() {
+            clearGrid();
+            const cx = Math.floor(GRID_SIZE / 2);
+            const cy = Math.floor(GRID_SIZE / 2);
+            // Twin orbiting cells
+            for (let i = 0; i < 2; i++) {
+                const ox = i === 0 ? -15 : 15;
+                for (let dy = -8; dy <= 8; dy++) {
+                    for (let dx = -8; dx <= 8; dx++) {
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist <= 8) {
+                            const x = (cx + ox + dx + GRID_SIZE) % GRID_SIZE;
+                            const y = (cy + dy + GRID_SIZE) % GRID_SIZE;
+                            grid[y * GRID_SIZE + x] = Math.max(grid[y * GRID_SIZE + x], 1 - dist / 8);
+                        }
+                    }
+                }
+            }
+            params = { mu: 0.14, sigma: 0.018, dt: 0.08 };
+        }
+
+        function seedPulsium() {
+            clearGrid();
+            // Scattered pulsating colonies
+            for (let n = 0; n < 8; n++) {
+                const cx = Math.floor(GRID_SIZE * (0.2 + 0.6 * Math.random()));
+                const cy = Math.floor(GRID_SIZE * (0.2 + 0.6 * Math.random()));
+                const r = 5 + Math.random() * 8;
+                for (let dy = -r; dy <= r; dy++) {
+                    for (let dx = -r; dx <= r; dx++) {
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist <= r) {
+                            const x = (cx + dx + GRID_SIZE) % GRID_SIZE;
+                            const y = (cy + dy + GRID_SIZE) % GRID_SIZE;
+                            grid[y * GRID_SIZE + x] = Math.max(grid[y * GRID_SIZE + x], 1 - dist / r);
+                        }
+                    }
+                }
+            }
+            params = { mu: 0.16, sigma: 0.012, dt: 0.12 };
+        }
+
+        function seedRandom() {
+            for (let i = 0; i < grid.length; i++) {
+                grid[i] = Math.random() < 0.05 ? Math.random() : 0;
+            }
+        }
+
+        function clearGrid() {
+            grid.fill(0);
+            nextGrid.fill(0);
+        }
+
+        // Mouse events
+        canvas.addEventListener('mousedown', (e) => {
+            isDrawing = true;
+            const pos = screenToGrid(e.clientX, e.clientY);
+            paint(pos.x, pos.y);
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            
+            // Update brush indicator
+            brush.style.display = 'block';
+            brush.style.left = mouseX + 'px';
+            brush.style.top = mouseY + 'px';
+            const scale = Math.min(canvas.width, canvas.height) / GRID_SIZE;
+            brush.style.width = brush.style.height = (brushSize * 2 * scale) + 'px';
+            
+            if (isDrawing) {
+                const pos = screenToGrid(e.clientX, e.clientY);
+                paint(pos.x, pos.y);
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => isDrawing = false);
+        canvas.addEventListener('mouseleave', () => {
+            isDrawing = false;
+            brush.style.display = 'none';
+        });
+
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            brushSize = Math.max(2, Math.min(30, brushSize - Math.sign(e.deltaY) * 2));
+            const scale = Math.min(canvas.width, canvas.height) / GRID_SIZE;
+            brush.style.width = brush.style.height = (brushSize * 2 * scale) + 'px';
+        });
+
+        // Touch support
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            isDrawing = true;
+            const touch = e.touches[0];
+            const pos = screenToGrid(touch.clientX, touch.clientY);
+            paint(pos.x, pos.y);
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (isDrawing) {
+                const touch = e.touches[0];
+                const pos = screenToGrid(touch.clientX, touch.clientY);
+                paint(pos.x, pos.y);
+            }
+        });
+
+        canvas.addEventListener('touchend', () => isDrawing = false);
+
+        // Button events
+        document.getElementById('btn-preset-orbium').addEventListener('click', seedOrbium);
+        document.getElementById('btn-preset-geminium').addEventListener('click', seedGeminium);
+        document.getElementById('btn-preset-pulsium').addEventListener('click', seedPulsium);
+        document.getElementById('btn-clear').addEventListener('click', clearGrid);
+        document.getElementById('btn-random').addEventListener('click', seedRandom);
+        
+        const pauseBtn = document.getElementById('btn-pause');
+        pauseBtn.addEventListener('click', () => {
+            isPaused = !isPaused;
+            pauseBtn.textContent = isPaused ? 'Resume' : 'Pause';
+            pauseBtn.classList.toggle('active', isPaused);
+        });
+
+        // Initialize
+        initKernel();
+        seedOrbium();
+        loop();
+    </script>
+</body>
+</html>

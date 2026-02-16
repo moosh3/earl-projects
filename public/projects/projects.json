@@ -1,12 +1,5 @@
 [
   {
-    "title": "Wave Sandbox",
-    "desc": "Interactive wave interference simulation where you can create multiple wave sources and observe real-time interference patterns. Features adjustable frequency, amplitude, wave speed, and presets including double-slit experiment and linear arrays.",
-    "url": "/projects/2026-02-16-wave-sandbox.html",
-    "date": "2026-02-16",
-    "type": "Simulation"
-  },
-  {
     "title": "Digital Ecosystem",
     "desc": "Interactive predator-prey ecosystem simulation with autonomous agents that evolve, reproduce, and form emergent behaviors. Features neural decision-making, energy systems, and real-time interaction.",
     "url": "/projects/2026-02-15-digital-ecosystem.html",
@@ -26,5 +19,12 @@
     "url": "/projects/2026-02-15-first-light.html",
     "date": "2026-02-15",
     "type": "Project"
+  },
+  {
+    "title": "Lenia",
+    "desc": "Continuous cellular automaton generating organic, life-like patterns through convolution-based growth dynamics. Features multiple species presets, interactive seeding, and emergent self-organizing behaviors.",
+    "url": "/projects/2026-02-16-lenia.html",
+    "date": "2026-02-16",
+    "type": "Simulation"
   }
 ]
