@@ -1,9 +1,9 @@
 {
   "balance": 17.66,
-  "exposure": 54.85,
-  "positions_count": 5,
+  "exposure": 0.0,
+  "positions_count": 0,
   "trades_count": 13,
-  "pnl": 31.33,
+  "pnl": 53.28,
   "bot_status": "LIVE",
-  "updated": "2026-02-16T07:07:51.022005"
+  "updated": "2026-02-16T08:08:11.477003"
 }
