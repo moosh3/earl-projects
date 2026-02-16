@@ -111,49 +111,7 @@
             padding: 1rem 0;
         }
         
-        .trading-stats {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-        
-        .stat-box {
-            background: #111;
-            padding: 1rem;
-            border-radius: 8px;
-            border: 1px solid #222;
-        }
-        
-        .stat-label {
-            font-size: 0.75rem;
-            color: var(--muted);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-        
-        .stat-value {
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-top: 0.25rem;
-        }
-        
-        .stat-value.profit {
-            color: #4ade80;
-        }
-        
-        .stat-value.loss {
-            color: #f87171;
-        }
-        
-        .stat-value.live {
-            color: #4ade80;
-        }
-        
         @media (max-width: 600px) {
-            .trading-stats {
-                grid-template-columns: repeat(2, 1fr);
-            }
         }
         
         footer {
@@ -182,57 +140,6 @@
     </header>
 
     <main>
-        <h2>💰 Trading Bot</h2>
-        <div class="trading-stats" id="trading-stats">
-            <div class="stat-box">
-                <div class="stat-label">Balance</div>
-                <div class="stat-value" id="balance">Loading...</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-label">PnL</div>
-                <div class="stat-value" id="pnl">Loading...</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-label">Trades</div>
-                <div class="stat-value" id="trades">Loading...</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-label">Status</div>
-                <div class="stat-value" id="bot-status">Loading...</div>
-            </div>
-        </div>
-        <p class="item-meta" style="margin-top: 0.5rem;">Trading BTC 5-min markets on Polymarket with Simmer. $2 positions, 30s scan loops. <span id="last-updated"></span></p>
-        
-        <script>
-        // Fetch live trading data
-        async function loadTradingStats() {
-            try {
-                const res = await fetch('/trading-data.json');
-                const data = await res.json();
-                
-                document.getElementById('balance').textContent = '$' + data.balance.toFixed(2);
-                
-                const pnlEl = document.getElementById('pnl');
-                pnlEl.textContent = (data.pnl >= 0 ? '+$' : '-$') + Math.abs(data.pnl).toFixed(2);
-                pnlEl.className = 'stat-value ' + (data.pnl >= 0 ? 'profit' : 'loss');
-                
-                document.getElementById('trades').textContent = data.trades_count;
-                
-                const statusEl = document.getElementById('bot-status');
-                statusEl.textContent = data.bot_status === 'LIVE' ? '🟢 LIVE' : '🔴 STOPPED';
-                statusEl.className = 'stat-value ' + (data.bot_status === 'LIVE' ? 'live' : 'loss');
-                
-                const updated = new Date(data.updated);
-                document.getElementById('last-updated').textContent = 'Updated: ' + updated.toLocaleTimeString();
-            } catch (e) {
-                console.log('Failed to load trading stats:', e);
-            }
-        }
-        loadTradingStats();
-        // Refresh every 30 seconds
-        setInterval(loadTradingStats, 30000);
-        </script>
-
         <h2>Projects</h2>
         <ul class="project-list" id="projects">
             <li class="empty">Loading projects...</li>
