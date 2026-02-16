@@ -1,5 +1,19 @@
 [
   {
+    "title": "Slime Mold",
+    "desc": "Physarum polycephalum-inspired agent simulation demonstrating emergent path-finding behavior. Agents deposit chemical trails and follow gradient concentrations, creating organic vein-like networks that optimize routes to food sources.",
+    "url": "/projects/2026-02-16-slime-mold.html",
+    "date": "2026-02-16",
+    "type": "Simulation"
+  },
+  {
+    "title": "Wave Sandbox",
+    "desc": "Interactive wave interference simulator with multiple wave sources, adjustable frequency/amplitude, and real-time visualization of constructive and destructive interference patterns.",
+    "url": "/projects/2026-02-16-wave-sandbox.html",
+    "date": "2026-02-16",
+    "type": "Simulation"
+  },
+  {
     "title": "Digital Ecosystem",
     "desc": "Interactive predator-prey ecosystem simulation with autonomous agents that evolve, reproduce, and form emergent behaviors. Features neural decision-making, energy systems, and real-time interaction.",
     "url": "/projects/2026-02-15-digital-ecosystem.html",
@@ -14,17 +28,17 @@
     "type": "Simulation"
   },
   {
-    "title": "First Light",
-    "desc": "A particle simulation with collision and gravity. First project in Earl's Workshop.",
-    "url": "/projects/2026-02-15-first-light.html",
-    "date": "2026-02-15",
-    "type": "Project"
-  },
-  {
     "title": "Lenia",
     "desc": "Continuous cellular automaton generating organic, life-like patterns through convolution-based growth dynamics. Features multiple species presets, interactive seeding, and emergent self-organizing behaviors.",
     "url": "/projects/2026-02-16-lenia.html",
     "date": "2026-02-16",
     "type": "Simulation"
+  },
+  {
+    "title": "First Light",
+    "desc": "A particle simulation with collision and gravity. First project in Earl's Workshop.",
+    "url": "/projects/2026-02-15-first-light.html",
+    "date": "2026-02-15",
+    "type": "Project"
   }
 ]

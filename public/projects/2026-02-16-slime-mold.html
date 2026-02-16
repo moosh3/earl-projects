@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Slime Mold Simulation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0f;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+        }
+
+        #canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: radial-gradient(ellipse at center, #0d1117 0%, #050508 100%);
+        }
+
+        .title-overlay {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        .title-overlay h1 {
+            font-size: 1.8rem;
+            font-weight: 300;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            background: linear-gradient(90deg, #00ff88, #00d4aa, #00ff88);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: shimmer 3s linear infinite;
+        }
+
+        .title-overlay .subtitle {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 0.15em;
+            margin-top: 5px;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 0% center; }
+            100% { background-position: 200% center; }
+        }
+
+        .controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 100;
+            background: rgba(10, 10, 15, 0.9);
+            padding: 12px 24px;
+            border-radius: 30px;
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .btn {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            color: #00ff88;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            background: rgba(0, 255, 136, 0.2);
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+        }
+
+        .stats {
+            position: fixed;
+            top: 80px;
+            left: 20px;
+            background: rgba(10, 10, 15, 0.8);
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            border-radius: 12px;
+            padding: 16px 20px;
+            z-index: 100;
+            font-size: 0.8rem;
+            min-width: 160px;
+            backdrop-filter: blur(10px);
+        }
+
+        .stats h3 {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(0, 255, 136, 0.2);
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 6px 0;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .stat-value {
+            color: #00ff88;
+            font-family: monospace;
+        }
+
+        .instructions {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: rgba(10, 10, 15, 0.8);
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            border-radius: 12px;
+            padding: 16px 20px;
+            z-index: 100;
+            font-size: 0.75rem;
+            max-width: 220px;
+            backdrop-filter: blur(10px);
+        }
+
+        .instructions h3 {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(0, 255, 136, 0.2);
+        }
+
+        .instruction-row {
+            margin: 8px 0;
+            color: rgba(255, 255, 255, 0.6);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .key {
+            background: rgba(0, 255, 136, 0.15);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.7rem;
+            color: #00ff88;
+            min-width: 50px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    
+    <div class="title-overlay">
+        <h1>Slime Mold</h1>
+        <div class="subtitle">Physarum Polycephalum Simulation</div>
+    </div>
+
+    <div class="stats">
+        <h3>Statistics</h3>
+        <div class="stat-row">
+            <span>Agents:</span>
+            <span class="stat-value" id="agentCount">0</span>
+        </div>
+        <div class="stat-row">
+            <span>FPS:</span>
+            <span class="stat-value" id="fps">0</span>
+        </div>
+        <div class="stat-row">
+            <span>Food Sources:</span>
+            <span class="stat-value" id="foodCount">0</span>
+        </div>
+        <div class="stat-row">
+            <span>Trail Density:</span>
+            <span class="stat-value" id="trailDensity">0%</span>
+        </div>
+    </div>
+
+    <div class="instructions">
+        <h3>Controls</h3>
+        <div class="instruction-row">
+            <span class="key">Click</span>
+            <span>Add food source</span>
+        </div>
+        <div class="instruction-row">
+            <span class="key">Drag</span>
+            <span>Spawn agents</span>
+        </div>
+        <div class="instruction-row">
+            <span class="key">Space</span>
+            <span>Pause/Resume</span>
+        </div>
+        <div class="instruction-row">
+            <span class="key">C</span>
+            <span>Clear trails</span>
+        </div>
+        <div class="instruction-row">
+            <span class="key">R</span>
+            <span>Reset all</span>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="btn" onclick="togglePause()">Pause</button>
+        <button class="btn" onclick="clearTrails()">Clear Trails</button>
+        <button class="btn" onclick="resetSimulation()">Reset</button>
+        <button class="btn" onclick="addRandomFood()">Add Food</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        let width, height;
+        let agents = [];
+        let foodSources = [];
+        let trailGrid = [];
+        let paused = false;
+        let frameCount = 0;
+        let lastTime = performance.now();
+        let fps = 60;
+
+        const GRID_SIZE = 4;
+        const SENSOR_ANGLE = Math.PI / 4;
+        const SENSOR_DIST = 20;
+        const TURN_SPEED = 0.2;
+        const MOVE_SPEED = 2;
+        const DECAY = 0.98;
+        const MAX_AGENTS = 2000;
+        
+        let gridWidth, gridHeight;
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            gridWidth = Math.ceil(width / GRID_SIZE);
+            gridHeight = Math.ceil(height / GRID_SIZE);
+            initTrailGrid();
+        }
+
+        function initTrailGrid() {
+            trailGrid = new Float32Array(gridWidth * gridHeight);
+        }
+
+        function getTrail(x, y) {
+            const gx = Math.floor(x / GRID_SIZE);
+            const gy = Math.floor(y / GRID_SIZE);
+            if (gx < 0 || gx >= gridWidth || gy < 0 || gy >= gridHeight) return 0;
+            return trailGrid[gy * gridWidth + gx];
+        }
+
+        function addTrail(x, y, amount) {
+            const gx = Math.floor(x / GRID_SIZE);
+            const gy = Math.floor(y / GRID_SIZE);
+            if (gx < 0 || gx >= gridWidth || gy < 0 || gy >= gridHeight) return;
+            const idx = gy * gridWidth + gx;
+            trailGrid[idx] = Math.min(1, trailGrid[idx] + amount);
+        }
+
+        class Agent {
+            constructor(x, y) {
+                this.x = x || Math.random() * width;
+                this.y = y || Math.random() * height;
+                this.angle = Math.random() * Math.PI * 2;
+                this.speed = MOVE_SPEED * (0.8 + Math.random() * 0.4);
+            }
+
+            sense(angleOffset) {
+                const sensorAngle = this.angle + angleOffset;
+                const sx = this.x + Math.cos(sensorAngle) * SENSOR_DIST;
+                const sy = this.y + Math.sin(sensorAngle) * SENSOR_DIST;
+                
+                let trail = getTrail(sx, sy);
+                
+                // Check food sources
+                for (let food of foodSources) {
+                    const dx = sx - food.x;
+                    const dy = sy - food.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < food.radius) {
+                        trail += food.strength * (1 - dist / food.radius);
+                    }
+                }
+                
+                return trail;
+            }
+
+            update() {
+                // Sense left, center, right
+                const left = this.sense(-SENSOR_ANGLE);
+                const center = this.sense(0);
+                const right = this.sense(SENSOR_ANGLE);
+
+                // Chemotaxis - turn toward higher concentrations
+                if (center > left && center > right) {
+                    // Continue straight
+                } else if (center < left && center < right) {
+                    // Turn randomly
+                    this.angle += (Math.random() - 0.5) * 2 * TURN_SPEED;
+                } else if (left > right) {
+                    this.angle -= TURN_SPEED;
+                } else if (right > left) {
+                    this.angle += TURN_SPEED;
+                }
+
+                // Add randomness for exploration
+                this.angle += (Math.random() - 0.5) * 0.1;
+
+                // Move
+                this.x += Math.cos(this.angle) * this.speed;
+                this.y += Math.sin(this.angle) * this.speed;
+
+                // Wrap around edges
+                if (this.x < 0) this.x = width;
+                if (this.x > width) this.x = 0;
+                if (this.y < 0) this.y = height;
+                if (this.y > height) this.y = 0;
+
+                // Deposit trail
+                addTrail(this.x, this.y, 0.1);
+            }
+        }
+
+        class FoodSource {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.radius = 30 + Math.random() * 20;
+                this.strength = 0.5 + Math.random() * 0.5;
+                this.pulse = Math.random() * Math.PI * 2;
+            }
+
+            update() {
+                this.pulse += 0.05;
+            }
+
+            draw(ctx) {
+                const pulseRadius = this.radius + Math.sin(this.pulse) * 5;
+                const gradient = ctx.createRadialGradient(
+                    this.x, this.y, 0,
+                    this.x, this.y, pulseRadius * 2
+                );
+                gradient.addColorStop(0, `rgba(255, 200, 100, ${this.strength})`);
+                gradient.addColorStop(0.5, `rgba(255, 150, 50, ${this.strength * 0.5})`);
+                gradient.addColorStop(1, 'rgba(255, 100, 0, 0)');
+                
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, pulseRadius * 2, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Core
+                ctx.fillStyle = `rgba(255, 220, 150, ${0.8 + Math.sin(this.pulse) * 0.2})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function initAgents() {
+            agents = [];
+            for (let i = 0; i < 800; i++) {
+                agents.push(new Agent(
+                    width / 2 + (Math.random() - 0.5) * 100,
+                    height / 2 + (Math.random() - 0.5) * 100
+                ));
+            }
+        }
+
+        function initFood() {
+            foodSources = [];
+            // Add food in a circle pattern
+            const count = 5;
+            const radius = Math.min(width, height) * 0.3;
+            for (let i = 0; i < count; i++) {
+                const angle = (i / count) * Math.PI * 2;
+                foodSources.push(new FoodSource(
+                    width / 2 + Math.cos(angle) * radius,
+                    height / 2 + Math.sin(angle) * radius
+                ));
+            }
+        }
+
+        function updateTrailGrid() {
+            for (let i = 0; i < trailGrid.length; i++) {
+                trailGrid[i] *= DECAY;
+            }
+        }
+
+        function drawTrails() {
+            const imageData = ctx.createImageData(width, height);
+            const data = imageData.data;
+            
+            for (let y = 0; y < height; y += 2) {
+                for (let x = 0; x < width; x += 2) {
+                    const trail = getTrail(x, y);
+                    if (trail > 0.01) {
+                        const intensity = Math.min(1, trail);
+                        const r = Math.floor(intensity * 0);
+                        const g = Math.floor(intensity * 255);
+                        const b = Math.floor(intensity * 136);
+                        
+                        // Draw 2x2 block for performance
+                        for (let dy = 0; dy < 2 && y + dy < height; dy++) {
+                            for (let dx = 0; dx < 2 && x + dx < width; dx++) {
+                                const idx = ((y + dy) * width + (x + dx)) * 4;
+                                data[idx] = r;
+                                data[idx + 1] = g;
+                                data[idx + 2] = b;
+                                data[idx + 3] = Math.floor(intensity * 200);
+                            }
+                        }
+                    }
+                }
+            }
+            
+            ctx.putImageData(imageData, 0, 0);
+        }
+
+        function drawAgents() {
+            ctx.fillStyle = 'rgba(200, 255, 200, 0.6)';
+            for (let agent of agents) {
+                ctx.fillRect(agent.x - 1, agent.y - 1, 2, 2);
+            }
+        }
+
+        function calculateTrailDensity() {
+            let total = 0;
+            for (let i = 0; i < trailGrid.length; i++) {
+                total += trailGrid[i];
+            }
+            return (total / trailGrid.length * 100).toFixed(1);
+        }
+
+        function updateStats() {
+            document.getElementById('agentCount').textContent = agents.length;
+            document.getElementById('fps').textContent = Math.round(fps);
+            document.getElementById('foodCount').textContent = foodSources.length;
+            document.getElementById('trailDensity').textContent = calculateTrailDensity() + '%';
+        }
+
+        function animate() {
+            if (!paused) {
+                // Clear with fade effect
+                ctx.fillStyle = 'rgba(5, 5, 8, 0.15)';
+                ctx.fillRect(0, 0, width, height);
+
+                // Update and draw
+                updateTrailGrid();
+                
+                for (let agent of agents) {
+                    agent.update();
+                }
+
+                for (let food of foodSources) {
+                    food.update();
+                    food.draw(ctx);
+                }
+
+                drawTrails();
+                drawAgents();
+
+                frameCount++;
+            }
+
+            // FPS calculation
+            const now = performance.now();
+            if (now - lastTime >= 1000) {
+                fps = frameCount;
+                frameCount = 0;
+                lastTime = now;
+                updateStats();
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        // Controls
+        function togglePause() {
+            paused = !paused;
+        }
+
+        function clearTrails() {
+            trailGrid.fill(0);
+            ctx.fillStyle = '#050508';
+            ctx.fillRect(0, 0, width, height);
+        }
+
+        function resetSimulation() {
+            clearTrails();
+            initAgents();
+            initFood();
+        }
+
+        function addRandomFood() {
+            foodSources.push(new FoodSource(
+                50 + Math.random() * (width - 100),
+                50 + Math.random() * (height - 100)
+            ));
+        }
+
+        // Input handling
+        let isDragging = false;
+
+        canvas.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            if (e.shiftKey) {
+                // Spawn agents on shift+click
+                for (let i = 0; i < 50; i++) {
+                    agents.push(new Agent(x + (Math.random() - 0.5) * 20, y + (Math.random() - 0.5) * 20));
+                }
+                if (agents.length > MAX_AGENTS) {
+                    agents = agents.slice(-MAX_AGENTS);
+                }
+            } else {
+                foodSources.push(new FoodSource(x, y));
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (isDragging && e.buttons === 1) {
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                // Spawn agents while dragging
+                for (let i = 0; i < 3; i++) {
+                    agents.push(new Agent(x + (Math.random() - 0.5) * 30, y + (Math.random() - 0.5) * 30));
+                }
+                if (agents.length > MAX_AGENTS) {
+                    agents = agents.slice(-MAX_AGENTS);
+                }
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+
+        document.addEventListener('keydown', (e) => {
+            switch(e.key.toLowerCase()) {
+                case ' ':
+                    e.preventDefault();
+                    togglePause();
+                    break;
+                case 'c':
+                    clearTrails();
+                    break;
+                case 'r':
+                    resetSimulation();
+                    break;
+            }
+        });
+
+        window.addEventListener('resize', resize);
+
+        // Initialize
+        resize();
+        initAgents();
+        initFood();
+        animate();
+    </script>
+</body>
+</html>
