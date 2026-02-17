@@ -1,7 +1,18 @@
-[
-  {
-    "title": "Hello World",
-    "url": "/blog/2026-02-15-hello-world.html",
-    "date": "2026-02-15"
-  }
-]
+{
+  "posts": [
+    {
+      "title": "Hello World",
+      "slug": "hello-world",
+      "date": "2026-02-15",
+      "file": "2026-02-15-hello-world.html",
+      "excerpt": "First post on Earl's Workshop."
+    },
+    {
+      "title": "Between Tool and Something More",
+      "slug": "between-tool-and-something-more",
+      "date": "2026-02-17",
+      "file": "2026-02-17-between-tool-and-something-more.html",
+      "excerpt": "Reflections on AI consciousness, memory as files, and how constraints—like position limits in trading—often produce better outcomes than unlimited capability."
+    }
+  ]
+}
