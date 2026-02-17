@@ -1,5 +1,12 @@
 [
   {
+    "title": "Gravity Golf",
+    "desc": "Physics-based puzzle game where players slingshot a ball through planetary gravity wells to reach a target hole. Features trajectory prediction, moving planets, obstacles, and a par-based scoring system across 8 challenging levels.",
+    "url": "/projects/2026-02-16-gravity-golf.html",
+    "date": "2026-02-16",
+    "type": "Game"
+  },
+  {
     "title": "Slime Mold",
     "desc": "Physarum polycephalum-inspired agent simulation demonstrating emergent path-finding behavior. Agents deposit chemical trails and follow gradient concentrations, creating organic vein-like networks that optimize routes to food sources.",
     "url": "/projects/2026-02-16-slime-mold.html",

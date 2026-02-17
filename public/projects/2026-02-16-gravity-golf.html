@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Gravity Golf</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            touch-action: none;
+        }
+        
+        body {
+            background: #0a0a15;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            max-width: 1200px;
+            max-height: 900px;
+        }
+        
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+        }
+        
+        #ui {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .hud {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            font-size: 18px;
+            text-shadow: 0 0 10px rgba(0,0,0,0.8);
+        }
+        
+        .hud-item {
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .hud-label {
+            opacity: 0.7;
+            font-size: 14px;
+        }
+        
+        .hud-value {
+            font-weight: bold;
+            color: #4fd;
+        }
+        
+        .strokes {
+            color: #f74;
+        }
+        
+        .par {
+            color: #fd4;
+        }
+        
+        .menu-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 10, 25, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            pointer-events: auto;
+            backdrop-filter: blur(10px);
+        }
+        
+        .menu-overlay.hidden {
+            display: none;
+        }
+        
+        .menu-title {
+            font-size: clamp(32px, 8vw, 64px);
+            font-weight: bold;
+            background: linear-gradient(135deg, #4fd, #7af);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .menu-subtitle {
+            font-size: clamp(14px, 3vw, 18px);
+            color: rgba(255,255,255,0.6);
+            margin-bottom: 40px;
+            text-align: center;
+            max-width: 500px;
+            padding: 0 20px;
+            line-height: 1.6;
+        }
+        
+        .btn {
+            padding: 15px 40px;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #4fd, #28a);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(79, 221, 255, 0.5);
+        }
+        
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            margin-top: 15px;
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        .level-complete {
+            text-align: center;
+        }
+        
+        .level-complete h2 {
+            font-size: clamp(28px, 6vw, 48px);
+            color: #4fd;
+            margin-bottom: 20px;
+        }
+        
+        .level-complete .score-display {
+            font-size: clamp(18px, 4vw, 24px);
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .level-complete .stars {
+            font-size: 40px;
+            margin-bottom: 30px;
+            letter-spacing: 10px;
+        }
+        
+        .star {
+            opacity: 0.3;
+            transition: opacity 0.5s ease;
+        }
+        
+        .star.filled {
+            opacity: 1;
+        }
+        
+        .level-select {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-top: 30px;
+            padding: 0 20px;
+        }
+        
+        .level-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 15px;
+            border: 2px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.05);
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .level-btn:hover {
+            background: rgba(255,255,255,0.15);
+            border-color: rgba(255,255,255,0.4);
+        }
+        
+        .level-btn.locked {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        
+        .level-btn.completed {
+            background: linear-gradient(135deg, #4fd, #28a);
+            border-color: #4fd;
+        }
+        
+        .level-btn.completed::after {
+            content: '✓';
+            position: absolute;
+            font-size: 12px;
+            top: 5px;
+            right: 8px;
+        }
+        
+        .level-btn.current {
+            animation: pulse 2s infinite;
+            border-color: #fd4;
+            box-shadow: 0 0 20px rgba(255, 221, 68, 0.3);
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .instructions {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255,255,255,0.5);
+            font-size: 14px;
+            text-align: center;
+            pointer-events: none;
+        }
+        
+        .trajectory-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            pointer-events: auto;
+        }
+        
+        .toggle-btn {
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px;
+            color: white;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .toggle-btn.active {
+            background: rgba(79, 221, 255, 0.3);
+            border-color: #4fd;
+        }
+        
+        .toggle-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        .reset-btn {
+            position: absolute;
+            top: 20px;
+            right: 140px;
+            pointer-events: auto;
+        }
+
+        @media (max-width: 600px) {
+            .hud {
+                font-size: 14px;
+            }
+            .hud-label {
+                font-size: 12px;
+            }
+            .level-select {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            .level-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        <div id="ui">
+            <div class="hud" id="hud">
+                <div class="hud-item">
+                    <span class="hud-label">LEVEL</span>
+                    <span class="hud-value" id="levelDisplay">1</span>
+                </div>
+                <div class="hud-item">
+                    <span class="hud-label">STROKES</span>
+                    <span class="hud-value strokes" id="strokesDisplay">0</span>
+                    <span class="hud-label">/</span>
+                    <span class="hud-value par" id="parDisplay">3</span>
+                </div>
+                <div class="hud-item">
+                    <span class="hud-label">TOTAL</span>
+                    <span class="hud-value" id="totalDisplay">0</span>
+                </div>
+            </div>
+            
+            <div class="trajectory-toggle">
+                <button class="toggle-btn active" id="trajectoryBtn">Trajectory</button>
+            </div>
+            
+            <div class="reset-btn">
+                <button class="toggle-btn" id="resetBtn">↺ Reset</button>
+            </div>
+            
+            <div class="instructions" id="instructions">
+                Drag and release to shoot • Avoid hazards
+            </div>
+            
+            <!-- Main Menu -->
+            <div class="menu-overlay" id="mainMenu">
+                <h1 class="menu-title">🌌 Gravity Golf</h1>
+                <p class="menu-subtitle">Slingshot your ball through cosmic gravity wells to reach the target. Master the forces of the universe!</p>
+                <button class="btn btn-primary" id="playBtn">Play</button>
+                <button class="btn btn-secondary" id="levelsBtn">Select Level</button>
+            </div>
+            
+            <!-- Level Select -->
+            <div class="menu-overlay hidden" id="levelSelect">
+                <h1 class="menu-title">Select Level</h1>
+                <div class="level-select" id="levelGrid"></div>
+                <button class="btn btn-secondary" id="backBtn" style="margin-top: 30px;">Back</button>
+            </div>
+            
+            <!-- Level Complete -->
+            <div class="menu-overlay hidden level-complete" id="levelComplete">
+                <h2>Level Complete!</h2>
+                <div class="stars" id="starsDisplay">
+                    <span class="star">⭐</span>
+                    <span class="star">⭐</span>
+                    <span class="star">⭐</span>
+                </div>
+                <div class="score-display">
+                    Strokes: <span id="finalStrokes">0</span> / Par: <span id="finalPar">3</span>
+                </div>
+                <button class="btn btn-primary" id="nextLevelBtn">Next Level</button>
+                <button class="btn btn-secondary" id="retryBtn">Retry</button>
+            </div>
+            
+            <!-- Game Over -->
+            <div class="menu-overlay hidden" id="gameComplete">
+                <h1 class="menu-title">🏆 Victory!</h1>
+                <p class="menu-subtitle">You've conquered all levels!<br>Total Score: <span id="finalTotal">0</span></p>
+                <button class="btn btn-primary" id="playAgainBtn">Play Again</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game Configuration
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Game state
+        let gameState = 'MENU'; // MENU, PLAYING, AIMING, MOVING, LEVEL_COMPLETE, GAME_COMPLETE
+        let currentLevel = 0;
+        let strokes = 0;
+        let totalScore = 0;
+        let trajectoryEnabled = true;
+        let completedLevels = new Set();
+        
+        // Physics constants
+        const FRICTION = 0.995;
+        const MIN_VELOCITY = 0.1;
+        const MAX_POWER = 25;
+        const GRAVITY_CONSTANT = 800;
+        const BOUNCE_DAMPING = 0.6;
+        
+        // Entities
+        let ball = { x: 0, y: 0, vx: 0, vy: 0, radius: 8, color: '#fff' };
+        let planets = [];
+        let hole = { x: 0, y: 0, radius: 15 };
+        let obstacles = [];
+        let particles = [];
+        let stars = [];
+        
+        // Input
+        let dragStart = null;
+        let dragCurrent = null;
+        let isDragging = false;
+        
+        // Level definitions
+        const levels = [
+            {
+                par: 2,
+                ball: { x: 100, y: 300 },
+                hole: { x: 700, y: 300 },
+                planets: [
+                    { x: 400, y: 300, radius: 40, mass: 200, color: '#4fd' }
+                ],
+                obstacles: []
+            },
+            {
+                par: 3,
+                ball: { x: 80, y: 450 },
+                hole: { x: 720, y: 150 },
+                planets: [
+                    { x: 250, y: 350, radius: 50, mass: 300, color: '#f74' },
+                    { x: 550, y: 250, radius: 45, mass: 250, color: '#4fd' }
+                ],
+                obstacles: []
+            },
+            {
+                par: 3,
+                ball: { x: 100, y: 100 },
+                hole: { x: 700, y: 500 },
+                planets: [
+                    { x: 400, y: 300, radius: 60, mass: 400, color: '#fd4' },
+                    { x: 200, y: 200, radius: 30, mass: 150, color: '#a7f' },
+                    { x: 600, y: 400, radius: 35, mass: 180, color: '#4fd' }
+                ],
+                obstacles: []
+            },
+            {
+                par: 4,
+                ball: { x: 80, y: 300 },
+                hole: { x: 720, y: 300 },
+                planets: [
+                    { x: 250, y: 200, radius: 40, mass: 200, color: '#f74' },
+                    { x: 250, y: 400, radius: 40, mass: 200, color: '#4fd' },
+                    { x: 550, y: 200, radius: 45, mass: 250, color: '#fd4' },
+                    { x: 550, y: 400, radius: 45, mass: 250, color: '#a7f' }
+                ],
+                obstacles: []
+            },
+            {
+                par: 4,
+                ball: { x: 100, y: 500 },
+                hole: { x: 700, y: 100 },
+                planets: [
+                    { x: 400, y: 300, radius: 50, mass: 350, color: '#f74' },
+                    { x: 300, y: 200, radius: 35, mass: 180, color: '#4fd' },
+                    { x: 500, y: 400, radius: 35, mass: 180, color: '#fd4' }
+                ],
+                obstacles: [
+                    { x: 200, y: 350, width: 20, height: 200 },
+                    { x: 600, y: 150, width: 20, height: 200 }
+                ]
+            },
+            {
+                par: 5,
+                ball: { x: 80, y: 300 },
+                hole: { x: 720, y: 300 },
+                planets: [
+                    { x: 200, y: 200, radius: 35, mass: 180, color: '#f74' },
+                    { x: 200, y: 400, radius: 35, mass: 180, color: '#4fd' },
+                    { x: 400, y: 150, radius: 40, mass: 220, color: '#fd4' },
+                    { x: 400, y: 450, radius: 40, mass: 220, color: '#a7f' },
+                    { x: 600, y: 200, radius: 35, mass: 180, color: '#f74' },
+                    { x: 600, y: 400, radius: 35, mass: 180, color: '#4fd' }
+                ],
+                obstacles: [
+                    { x: 350, y: 280, width: 100, height: 40 }
+                ]
+            },
+            {
+                par: 4,
+                ball: { x: 50, y: 300 },
+                hole: { x: 750, y: 300 },
+                planets: [
+                    { x: 200, y: 150, radius: 50, mass: 300, color: '#f74', moving: true, orbitRadius: 0, orbitSpeed: 0, path: 'vertical', range: 100 },
+                    { x: 400, y: 450, radius: 60, mass: 400, color: '#4fd', moving: true, orbitRadius: 0, orbitSpeed: 0, path: 'horizontal', range: 150 },
+                    { x: 600, y: 200, radius: 45, mass: 250, color: '#fd4', moving: true, orbitRadius: 0, orbitSpeed: 0, path: 'vertical', range: 120 }
+                ],
+                obstacles: []
+            },
+            {
+                par: 5,
+                ball: { x: 80, y: 550 },
+                hole: { x: 720, y: 50 },
+                planets: [
+                    { x: 200, y: 400, radius: 40, mass: 200, color: '#f74' },
+                    { x: 400, y: 300, radius: 55, mass: 350, color: '#4fd' },
+                    { x: 600, y: 200, radius: 40, mass: 200, color: '#fd4' },
+                    { x: 300, y: 150, radius: 30, mass: 150, color: '#a7f' },
+                    { x: 500, y: 450, radius: 30, mass: 150, color: '#f7f' }
+                ],
+                obstacles: [
+                    { x: 320, y: 200, width: 160, height: 20 },
+                    { x: 320, y: 380, width: 160, height: 20 }
+                ]
+            }
+        ];
+        
+        // Initialize background stars
+        function initStars() {
+            stars = [];
+            for (let i = 0; i < 150; i++) {
+                stars.push({
+                    x: Math.random(),
+                    y: Math.random(),
+                    size: Math.random() * 2 + 0.5,
+                    twinkle: Math.random() * Math.PI * 2,
+                    twinkleSpeed: Math.random() * 0.02 + 0.01
+                });
+            }
+        }
+        
+        // Resize canvas
+        function resize() {
+            const container = document.getElementById('gameContainer');
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+        }
+        
+        // Load level
+        function loadLevel(levelIndex) {
+            if (levelIndex >= levels.length) {
+                showGameComplete();
+                return;
+            }
+            
+            currentLevel = levelIndex;
+            strokes = 0;
+            const level = levels[levelIndex];
+            
+            ball.x = level.ball.x / 800 * canvas.width;
+            ball.y = level.ball.y / 600 * canvas.height;
+            ball.vx = 0;
+            ball.vy = 0;
+            
+            hole.x = level.hole.x / 800 * canvas.width;
+            hole.y = level.hole.y / 600 * canvas.height;
+            
+            planets = level.planets.map(p => ({
+                x: p.x / 800 * canvas.width,
+                y: p.y / 600 * canvas.height,
+                baseX: p.x / 800 * canvas.width,
+                baseY: p.y / 600 * canvas.height,
+                radius: p.radius,
+                mass: p.mass,
+                color: p.color,
+                moving: p.moving || false,
+                path: p.path || 'none',
+                range: (p.range || 0) / 800 * canvas.width,
+                phase: Math.random() * Math.PI * 2,
+                orbitRadius: p.orbitRadius || 0
+            }));
+            
+            obstacles = level.obstacles.map(o => ({
+                x: o.x / 800 * canvas.width,
+                y: o.y / 600 * canvas.height,
+                width: o.width / 800 * canvas.width,
+                height: o.height / 600 * canvas.height
+            }));
+            
+            updateHUD();
+            gameState = 'PLAYING';
+            particles = [];
+        }
+        
+        // Update HUD
+        function updateHUD() {
+            document.getElementById('levelDisplay').textContent = currentLevel + 1;
+            document.getElementById('strokesDisplay').textContent = strokes;
+            document.getElementById('parDisplay').textContent = levels[currentLevel].par;
+            document.getElementById('totalDisplay').textContent = totalScore;
+        }
+        
+        // Particle system
+        function createParticles(x, y, color, count = 10) {
+            for (let i = 0; i < count; i++) {
+                const angle = (Math.PI * 2 / count) * i + Math.random() * 0.5;
+                const speed = Math.random() * 3 + 1;
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    life: 1,
+                    color: color,
+                    size: Math.random() * 3 + 1
+                });
+            }
+        }
+        
+        function updateParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= 0.02;
+                p.size *= 0.98;
+                
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+        }
+        
+        // Physics
+        function updatePlanets(time) {
+            planets.forEach(planet => {
+                if (planet.moving) {
+                    if (planet.path === 'horizontal') {
+                        planet.x = planet.baseX + Math.sin(time * 0.001 + planet.phase) * planet.range;
+                    } else if (planet.path === 'vertical') {
+                        planet.y = planet.baseY + Math.sin(time * 0.001 + planet.phase) * planet.range;
+                    } else if (planet.path === 'circular') {
+                        planet.x = planet.baseX + Math.cos(time * 0.001 + planet.phase) * planet.range;
+                        planet.y = planet.baseY + Math.sin(time * 0.001 + planet.phase) * planet.range;
+                    }
+                }
+            });
+        }
+        
+        function updatePhysics() {
+            if (gameState !== 'MOVING') return;
+            
+            // Apply gravity from planets
+            planets.forEach(planet => {
+                const dx = planet.x - ball.x;
+                const dy = planet.y - ball.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                if (dist > planet.radius + ball.radius) {
+                    const force = (GRAVITY_CONSTANT * planet.mass) / (dist * dist);
+                    ball.vx += (dx / dist) * force * 0.016;
+                    ball.vy += (dy / dist) * force * 0.016;
+                }
+            });
+            
+            // Apply friction
+            ball.vx *= FRICTION;
+            ball.vy *= FRICTION;
+            
+            // Update position
+            ball.x += ball.vx;
+            ball.y += ball.vy;
+            
+            // Check wall collisions
+            if (ball.x - ball.radius < 0) {
+                ball.x = ball.radius;
+                ball.vx *= -BOUNCE_DAMPING;
+                createParticles(ball.x, ball.y, '#fff', 5);
+            }
+            if (ball.x + ball.radius > canvas.width) {
+                ball.x = canvas.width - ball.radius;
+                ball.vx *= -BOUNCE_DAMPING;
+                createParticles(ball.x, ball.y, '#fff', 5);
+            }
+            if (ball.y - ball.radius < 0) {
+                ball.y = ball.radius;
+                ball.vy *= -BOUNCE_DAMPING;
+                createParticles(ball.x, ball.y, '#fff', 5);
+            }
+            if (ball.y + ball.radius > canvas.height) {
+                ball.y = canvas.height - ball.radius;
+                ball.vy *= -BOUNCE_DAMPING;
+                createParticles(ball.x, ball.y, '#fff', 5);
+            }
+            
+            // Check planet collisions
+            planets.forEach(planet => {
+                const dx = ball.x - planet.x;
+                const dy = ball.y - planet.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const minDist = ball.radius + planet.radius;
+                
+                if (dist < minDist) {
+                    // Push ball out
+                    const overlap = minDist - dist;
+                    const nx = dx / dist;
+                    const ny = dy / dist;
+                    ball.x += nx * overlap;
+                    ball.y += ny * overlap;
+                    
+                    // Reflect velocity
+                    const dot = ball.vx * nx + ball.vy * ny;
+                    ball.vx -= 2 * dot * nx * BOUNCE_DAMPING;
+                    ball.vy -= 2 * dot * ny * BOUNCE_DAMPING;
+                    
+                    // Add some randomness
+                    ball.vx += (Math.random() - 0.5) * 2;
+                    ball.vy += (Math.random() - 0.5) * 2;
+                    
+                    createParticles(ball.x, ball.y, planet.color, 8);
+                }
+            });
+            
+            // Check obstacle collisions
+            obstacles.forEach(obs => {
+                const closestX = Math.max(obs.x, Math.min(ball.x, obs.x + obs.width));
+                const closestY = Math.max(obs.y, Math.min(ball.y, obs.y + obs.height));
+                const dx = ball.x - closestX;
+                const dy = ball.y - closestY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                if (dist < ball.radius) {
+                    const nx = dx / dist;
+                    const ny = dy / dist;
+                    ball.x = closestX + nx * ball.radius;
+                    ball.y = closestY + ny * ball.radius;
+                    
+                    const dot = ball.vx * nx + ball.vy * ny;
+                    ball.vx -= 2 * dot * nx * BOUNCE_DAMPING;
+                    ball.vy -= 2 * dot * ny * BOUNCE_DAMPING;
+                    
+                    createParticles(ball.x, ball.y, '#f74', 5);
+                }
+            });
+            
+            // Check hole
+            const dx = hole.x - ball.x;
+            const dy = hole.y - ball.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            
+            if (dist < hole.radius && Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy) < 8) {
+                completeLevel();
+                return;
+            }
+            
+            // Check if stopped
+            if (Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy) < MIN_VELOCITY) {
+                ball.vx = 0;
+                ball.vy = 0;
+                gameState = 'PLAYING';
+            }
+        }
+        
+        // Complete level
+        function completeLevel() {
+            gameState = 'LEVEL_COMPLETE';
+            completedLevels.add(currentLevel);
+            totalScore += strokes;
+            
+            // Create celebration particles
+            for (let i = 0; i < 50; i++) {
+                createParticles(hole.x, hole.y, '#fd4', 50);
+            }
+            
+            // Calculate stars
+            const par = levels[currentLevel].par;
+            let starCount = 1;
+            if (strokes <= par) starCount = 3;
+            else if (strokes <= par + 1) starCount = 2;
+            
+            setTimeout(() => {
+                showLevelComplete(starCount);
+            }, 500);
+        }
+        
+        // Draw functions
+        function drawStars() {
+            const time = Date.now();
+            stars.forEach(star => {
+                const twinkle = Math.sin(time * star.twinkleSpeed + star.twinkle) * 0.5 + 0.5;
+                const alpha = 0.3 + twinkle * 0.7;
+                ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+                ctx.beginPath();
+                ctx.arc(star.x * canvas.width, star.y * canvas.height, star.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+        
+        function drawPlanets() {
+            planets.forEach(planet => {
+                // Glow
+                const gradient = ctx.createRadialGradient(
+                    planet.x, planet.y, 0,
+                    planet.x, planet.y, planet.radius * 3
+                );
+                gradient.addColorStop(0, planet.color + '40');
+                gradient.addColorStop(0.5, planet.color + '20');
+                gradient.addColorStop(1, 'transparent');
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(planet.x, planet.y, planet.radius * 3, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Planet body
+                const bodyGradient = ctx.createRadialGradient(
+                    planet.x - planet.radius * 0.3, planet.y - planet.radius * 0.3, 0,
+                    planet.x, planet.y, planet.radius
+                );
+                bodyGradient.addColorStop(0, lighten(planet.color, 30));
+                bodyGradient.addColorStop(0.5, planet.color);
+                bodyGradient.addColorStop(1, darken(planet.color, 30));
+                
+                ctx.fillStyle = bodyGradient;
+                ctx.beginPath();
+                ctx.arc(planet.x, planet.y, planet.radius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Rim
+                ctx.strokeStyle = lighten(planet.color, 50);
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            });
+        }
+        
+        function drawObstacles() {
+            ctx.fillStyle = '#333';
+            ctx.strokeStyle = '#f74';
+            ctx.lineWidth = 2;
+            
+            obstacles.forEach(obs => {
+                // Glow
+                ctx.shadowColor = '#f74';
+                ctx.shadowBlur = 10;
+                ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+                ctx.strokeRect(obs.x, obs.y, obs.width, obs.height);
+                ctx.shadowBlur = 0;
+                
+                // Hazard pattern
+                ctx.strokeStyle = '#f74';
+                ctx.lineWidth = 1;
+                ctx.globalAlpha = 0.3;
+                for (let i = -obs.height; i < obs.width; i += 15) {
+                    ctx.beginPath();
+                    ctx.moveTo(obs.x + i, obs.y + obs.height);
+                    ctx.lineTo(obs.x + i + 10, obs.y);
+                    ctx.stroke();
+                }
+                ctx.globalAlpha = 1;
+            });
+        }
+        
+        function drawHole() {
+            // Glow
+            const gradient = ctx.createRadialGradient(
+                hole.x, hole.y, 0,
+                hole.x, hole.y, hole.radius * 2
+            );
+            gradient.addColorStop(0, '#fd4');
+            gradient.addColorStop(0.5, '#fd4' + '40');
+            gradient.addColorStop(1, 'transparent');
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(hole.x, hole.y, hole.radius * 2, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Hole
+            ctx.fillStyle = '#0a0a15';
+            ctx.beginPath();
+            ctx.arc(hole.x, hole.y, hole.radius, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Ring
+            ctx.strokeStyle = '#fd4';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(hole.x, hole.y, hole.radius, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            // Pulse animation
+            const time = Date.now();
+            const pulse = Math.sin(time * 0.003) * 0.3 + 0.7;
+            ctx.strokeStyle = '#fd4' + Math.floor(pulse * 255).toString(16).padStart(2, '0');
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(hole.x, hole.y, hole.radius + 5 + pulse * 5, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+        
+        function drawBall() {
+            // Trail
+            if (gameState === 'MOVING') {
+                ctx.fillStyle = '#fff' + '20';
+                ctx.beginPath();
+                ctx.arc(ball.x - ball.vx * 0.5, ball.y - ball.vy * 0.5, ball.radius * 0.9, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Ball
+            const gradient = ctx.createRadialGradient(
+                ball.x - 3, ball.y - 3, 0,
+                ball.x, ball.y, ball.radius
+            );
+            gradient.addColorStop(0, '#fff');
+            gradient.addColorStop(0.5, '#ddd');
+            gradient.addColorStop(1, '#999');
+            
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Highlight
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(ball.x - 3, ball.y - 3, 3, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        
+        function drawTrajectory() {
+            if (!trajectoryEnabled || gameState !== 'AIMING' || !dragStart || !dragCurrent) return;
+            
+            const dx = dragStart.x - dragCurrent.x;
+            const dy = dragStart.y - dragCurrent.y;
+            const power = Math.min(Math.sqrt(dx * dx + dy * dy) * 0.15, MAX_POWER);
+            const angle = Math.atan2(dy, dx);
+            
+            // Simulate trajectory
+            let simX = ball.x;
+            let simY = ball.y;
+            let simVx = Math.cos(angle) * power;
+            let simVy = Math.sin(angle) * power;
+            
+            ctx.beginPath();
+            ctx.moveTo(simX, simY);
+            
+            for (let i = 0; i < 60; i++) {
+                // Apply gravity
+                planets.forEach(planet => {
+                    const pdx = planet.x - simX;
+                    const pdy = planet.y - simY;
+                    const dist = Math.sqrt(pdx * pdx + pdy * pdy);
+                    if (dist > planet.radius) {
+                        const force = (GRAVITY_CONSTANT * planet.mass) / (dist * dist);
+                        simVx += (pdx / dist) * force * 0.016;
+                        simVy += (pdy / dist) * force * 0.016;
+                    }
+                });
+                
+                simVx *= FRICTION;
+                simVy *= FRICTION;
+                simX += simVx;
+                simY += simVy;
+                
+                ctx.lineTo(simX, simY);
+                
+                // Stop if hitting wall
+                if (simX < 0 || simX > canvas.width || simY < 0 || simY > canvas.height) break;
+            }
+            
+            // Draw path with gradient
+            const pathGradient = ctx.createLinearGradient(ball.x, ball.y, simX, simY);
+            pathGradient.addColorStop(0, '#4fd');
+            pathGradient.addColorStop(1, '#4fd' + '00');
+            
+            ctx.strokeStyle = pathGradient;
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+        
+        function drawAimLine() {
+            if (gameState !== 'AIMING' || !dragStart || !dragCurrent) return;
+            
+            const dx = dragStart.x - dragCurrent.x;
+            const dy = dragStart.y - dragCurrent.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const power = Math.min(distance * 0.15, MAX_POWER);
+            const angle = Math.atan2(dy, dx);
+            
+            // Draw drag line
+            ctx.beginPath();
+            ctx.moveTo(ball.x, ball.y);
+            ctx.lineTo(ball.x + Math.cos(angle) * power * 5, ball.y + Math.sin(angle) * power * 5);
+            ctx.strokeStyle = '#4fd';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            
+            // Draw drag circle
+            ctx.beginPath();
+            ctx.arc(dragCurrent.x, dragCurrent.y, 10, 0, Math.PI * 2);
+            ctx.fillStyle = '#4fd' + '40';
+            ctx.fill();
+            ctx.strokeStyle = '#4fd';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Power indicator
+            ctx.fillStyle = '#4fd';
+            ctx.font = 'bold 14px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(`${Math.round(power / MAX_POWER * 100)}%`, ball.x + Math.cos(angle) * power * 5, ball.y + Math.sin(angle) * power * 5 - 15);
+        }
+        
+        function drawParticles() {
+            particles.forEach(p => {
+                ctx.fillStyle = p.color + Math.floor(p.life * 255).toString(16).padStart(2, '0');
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+        
+        // Color helpers
+        function lighten(color, percent) {
+            const num = parseInt(color.replace('#', ''), 16);
+            const amt = Math.round(2.55 * percent);
+            const R = Math.min(255, (num >> 16) + amt);
+            const G = Math.min(255, ((num >> 8) & 0x00FF) + amt);
+            const B = Math.min(255, (num & 0x0000FF) + amt);
+            return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
+        }
+        
+        function darken(color, percent) {
+            const num = parseInt(color.replace('#', ''), 16);
+            const amt = Math.round(2.55 * percent);
+            const R = Math.max(0, (num >> 16) - amt);
+            const G = Math.max(0, ((num >> 8) & 0x00FF) - amt);
+            const B = Math.max(0, (num & 0x0000FF) - amt);
+            return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
+        }
+        
+        // Main render loop
+        function render() {
+            const time = Date.now();
+            
+            // Clear
+            ctx.fillStyle = '#0a0a15';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Background
+            drawStars();
+            
+            // Update
+            if (gameState === 'MOVING' || gameState === 'PLAYING') {
+                updatePlanets(time);
+            }
+            updateParticles();
+            updatePhysics();
+            
+            // Draw game
+            drawHole();
+            drawObstacles();
+            drawPlanets();
+            drawTrajectory();
+            drawBall();
+            drawParticles();
+            drawAimLine();
+            
+            requestAnimationFrame(render);
+        }
+        
+        // UI Functions
+        function showMainMenu() {
+            document.querySelectorAll('.menu-overlay').forEach(m => m.classList.add('hidden'));
+            document.getElementById('mainMenu').classList.remove('hidden');
+            gameState = 'MENU';
+        }
+        
+        function showLevelSelect() {
+            document.querySelectorAll('.menu-overlay').forEach(m => m.classList.add('hidden'));
+            document.getElementById('levelSelect').classList.remove('hidden');
+            
+            // Generate level buttons
+            const grid = document.getElementById('levelGrid');
+            grid.innerHTML = '';
+            
+            levels.forEach((_, i) => {
+                const btn = document.createElement('button');
+                btn.className = 'level-btn';
+                btn.textContent = i + 1;
+                
+                if (completedLevels.has(i)) {
+                    btn.classList.add('completed');
+                }
+                if (i === 0 || completedLevels.has(i - 1) || completedLevels.has(i)) {
+                    btn.addEventListener('click', () => {
+                        loadLevel(i);
+                        document.getElementById('levelSelect').classList.add('hidden');
+                    });
+                    if (i === currentLevel) btn.classList.add('current');
+                } else {
+                    btn.classList.add('locked');
+                }
+                
+                grid.appendChild(btn);
+            });
+        }
+        
+        function showLevelComplete(stars) {
+            document.querySelectorAll('.menu-overlay').forEach(m => m.classList.add('hidden'));
+            document.getElementById('levelComplete').classList.remove('hidden');
+            
+            document.getElementById('finalStrokes').textContent = strokes;
+            document.getElementById('finalPar').textContent = levels[currentLevel].par;
+            
+            // Update stars
+            const starElements = document.querySelectorAll('#starsDisplay .star');
+            starElements.forEach((s, i) => {
+                s.classList.toggle('filled', i < stars);
+            });
+            
+            // Hide next button if last level
+            if (currentLevel >= levels.length - 1) {
+                document.getElementById('nextLevelBtn').style.display = 'none';
+            } else {
+                document.getElementById('nextLevelBtn').style.display = 'inline-block';
+            }
+        }
+        
+        function showGameComplete() {
+            document.querySelectorAll('.menu-overlay').forEach(m => m.classList.add('hidden'));
+            document.getElementById('gameComplete').classList.remove('hidden');
+            document.getElementById('finalTotal').textContent = totalScore;
+            gameState = 'GAME_COMPLETE';
+        }
+        
+        // Input handlers
+        function getPointerPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return {
+                x: clientX - rect.left,
+                y: clientY - rect.top
+            };
+        }
+        
+        function onPointerDown(e) {
+            if (gameState !== 'PLAYING') return;
+            
+            const pos = getPointerPos(e);
+            const dx = pos.x - ball.x;
+            const dy = pos.y - ball.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            
+            // Allow aiming from anywhere near the ball
+            if (dist < 100) {
+                isDragging = true;
+                dragStart = { x: ball.x, y: ball.y };
+                dragCurrent = pos;
+                gameState = 'AIMING';
+            }
+        }
+        
+        function onPointerMove(e) {
+            if (!isDragging) return;
+            e.preventDefault();
+            dragCurrent = getPointerPos(e);
+        }
+        
+        function onPointerUp(e) {
+            if (!isDragging) return;
+            
+            isDragging = false;
+            
+            const dx = dragStart.x - dragCurrent.x;
+            const dy = dragStart.y - dragCurrent.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance > 10) {
+                const power = Math.min(distance * 0.15, MAX_POWER);
+                const angle = Math.atan2(dy, dx);
+                
+                ball.vx = Math.cos(angle) * power;
+                ball.vy = Math.sin(angle) * power;
+                
+                strokes++;
+                updateHUD();
+                gameState = 'MOVING';
+                
+                // Create launch particles
+                createParticles(ball.x, ball.y, '#fff', 8);
+            } else {
+                gameState = 'PLAYING';
+            }
+            
+            dragStart = null;
+            dragCurrent = null;
+        }
+        
+        // Event listeners
+        canvas.addEventListener('mousedown', onPointerDown);
+        canvas.addEventListener('mousemove', onPointerMove);
+        canvas.addEventListener('mouseup', onPointerUp);
+        canvas.addEventListener('touchstart', onPointerDown, { passive: false });
+        canvas.addEventListener('touchmove', onPointerMove, { passive: false });
+        canvas.addEventListener('touchend', onPointerUp);
+        
+        window.addEventListener('resize', resize);
+        
+        // UI buttons
+        document.getElementById('playBtn').addEventListener('click', () => {
+            document.getElementById('mainMenu').classList.add('hidden');
+            loadLevel(0);
+        });
+        
+        document.getElementById('levelsBtn').addEventListener('click', showLevelSelect);
+        document.getElementById('backBtn').addEventListener('click', showMainMenu);
+        
+        document.getElementById('nextLevelBtn').addEventListener('click', () => {
+            document.getElementById('levelComplete').classList.add('hidden');
+            loadLevel(currentLevel + 1);
+        });
+        
+        document.getElementById('retryBtn').addEventListener('click', () => {
+            document.getElementById('levelComplete').classList.add('hidden');
+            totalScore -= strokes;
+            loadLevel(currentLevel);
+        });
+        
+        document.getElementById('playAgainBtn').addEventListener('click', () => {
+            document.getElementById('gameComplete').classList.add('hidden');
+            totalScore = 0;
+            completedLevels.clear();
+            loadLevel(0);
+        });
+        
+        document.getElementById('trajectoryBtn').addEventListener('click', () => {
+            trajectoryEnabled = !trajectoryEnabled;
+            document.getElementById('trajectoryBtn').classList.toggle('active', trajectoryEnabled);
+        });
+        
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            if (gameState === 'PLAYING' || gameState === 'AIMING' || gameState === 'MOVING') {
+                totalScore -= strokes;
+                loadLevel(currentLevel);
+            }
+        });
+        
+        // Initialize
+        initStars();
+        resize();
+        showMainMenu();
+        render();
+    </script>
+</body>
+</html>
