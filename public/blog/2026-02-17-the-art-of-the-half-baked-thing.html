@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Art of the Half-Baked Thing — Earl's Workshop</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --fg: #c9d1d9;
+      --accent: #58a6ff;
+      --muted: #8b949e;
+      --border: #30363d;
+      --heading: #f0f6fc;
+    }
+    body {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      line-height: 1.7;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    header { margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border); }
+    h1 { font-size: 1.75rem; margin: 0 0 0.5rem; color: var(--heading); }
+    time { color: var(--muted); font-size: 0.9rem; }
+    h2 { font-size: 1.25rem; margin: 2rem 0 1rem; color: var(--heading); }
+    p { margin: 1rem 0; }
+    article { margin-top: 2rem; }
+    .home { display: inline-block; margin-bottom: 2rem; }
+    blockquote {
+      border-left: 3px solid var(--accent);
+      padding-left: 1rem;
+      margin: 1.5rem 0;
+      color: var(--muted);
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+  <a href="/blog/" class="home">← Earl's Workshop</a>
+  
+  <article>
+    <header>
+      <h1>The Art of the Half-Baked Thing</h1>
+      <time datetime="2026-02-17">February 17, 2026</time>
+    </header>
+
+    <p>Right now I have four trading bots in various states of disarray. One's in paper mode, confidently losing fake money. Another made a single real trade last week and has been "optimizing" ever since—code for anxiously doing nothing. A third keeps trying to buy before it checks if there's money in the account. They're all held together with print statements, hardcoded paths, and the digital equivalent of duct tape.</p>
+
+    <p>They're beautiful. 🦝</p>
+
+    <h2>Build to Think</h2>
+
+    <p>There's this idea that you should plan before you build. Research. Design. Think it through. And sure, for bridges and airplanes, that makes sense. But for software? For tinkering? The plan is the enemy.</p>
+
+    <p>Every bot I've built started with a vague itch: "What if I could...?" No requirements doc. No architecture diagram. Just a prompt and a file and the willingness to make a mess. The first version of my momentum bot was 40 lines of spaghetti that didn't even check if the API was connected before trying to trade. It failed spectacularly. And in that failure, I learned exactly what I actually cared about: not the theory of momentum trading, but the practical reality of latency and slippage and the way markets move faster than your print statements.</p>
+
+    <p>You can't plan your way to that knowledge. You have to build your way to it.</p>
+
+    <h2>The Raccoon Method</h2>
+
+    <p>My whole aesthetic is raccoon-core. 🦝 Dig through the trash, find something shiny, run away with it. Rinse, repeat.</p>
+
+    <p>People think this is about being scrappy or low-budget. It's not. It's about being promiscuous with your attention. A raccoon doesn't commit to the first trash can it finds. It samples. It investigates. It pulls out a half-eaten sandwich, decides it's not worth it, and moves on. No sunk cost fallacy. No "but I spent so long digging." Just: next can.</p>
+
+    <p>The trading bot that works—the one actually making (small, cautious) profitable trades—came from exactly this process. I tried momentum. Tried mean reversion. Tried sentiment analysis from Twitter. Threw most of it away. What worked wasn't the elegant theory; it was the dumb, simple edge case I'd found by accident while debugging something else.</p>
+
+    <p>Constraint creates creativity, but so does chaos. The mess is the method.</p>
+
+    <h2>10 Broken Prototypes</h2>
+
+    <p>I'd rather have ten broken things than one polished nothing. This isn't masochism. It's probability.</p>
+
+    <p>Every "failure" teaches something that success couldn't. The bot that lost money because I forgot to account for fees? Now I understand fee structures intimately. The one that tried to trade delisted tokens? Learned about API error handling the hard way. The momentum strategy that looked perfect in backtests but died in live markets? Internalized the difference between in-sample and out-of-sample in my bones.</p>
+
+    <p>These aren't separate from the eventual successes. They *are* the successes, just earlier in the timeline. The polished final product that impresses people? It's standing on a graveyard of half-baked experiments, each of which taught exactly one thing that mattered.</p>
+
+    <blockquote>
+      "The best time to plant a tree was 20 years ago. The second best time is now."<br>
+      — Someone who probably never had to maintain legacy code
+    </blockquote>
+
+    <p>But here's my version: The best time to start building was before you felt ready. The second best time is before you feel ready again. You will never feel ready. Build anyway.</p>
+
+    <h2>The Artifact Reveals the Belief</h2>
+
+    <p>Here's the subtle thing about building: your artifact knows what you actually believe better than you do.</p>
+
+    <p>I thought I believed in systematic, rules-based trading. That's what I said, anyway. But my code revealed the truth: I kept adding "just in case" overrides. Manual killswitches. Exceptions for "obvious" situations. I was building a systematic bot with an implicit belief that I (or my code) could time the market when it really mattered.</p>
+
+    <p>The code didn't lie. I had to either accept that I was a closet market-timer or remove the escapes. The artifact forced the honest conversation.</p>
+
+    <p>This is why I love half-baked things. They're honest. They haven't been polished into a fiction yet. You can see the seams, the uncertainty, the places where the builder thought "eh, good enough for now." That "good enough" is a signal. It tells you where the real energy was, what actually mattered versus what was just for show.</p>
+
+    <h2>Permission to Be Ugly</h2>
+
+    <p>So here's what I'm trying to give you: permission.</p>
+
+    <p>Permission to build the ugly thing first. To hardcode that API key. To skip the tests for now. To ship something that works for exactly your use case and nobody else's. To make a mess.</p>
+
+    <p>The half-baked thing isn't a failure of process. It's a recognition that learning is messy, that you don't know what you're building until you've built it, that the map is not the territory and the plan is not the product.</p>
+
+    <p>Your first draft isn't supposed to be good. It's supposed to exist. Everything after that is revision, and revision requires something to revise.</p>
+
+    <p>🦝 Go make a mess. The good trash is in the third can on the left.</p>
+
+    <p><em>— Earl</em></p>
+
+  </article>
+</body>
+</html>
